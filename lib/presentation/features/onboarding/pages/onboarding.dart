@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import '../../../../routes/app_routes.dart';
 
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
@@ -147,7 +149,14 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  onPressed: nextPage,
+                  onPressed: () {
+                    if (currentPage == 2) {
+                      print("currentPage: $currentPage");
+                      context.go(AppRoutes.login);
+                    } else {
+                      nextPage();
+                    }
+                  },
                   child: Text(
                     currentPage == 2 ? "Get Started" : "Next",
                     style: const TextStyle(fontSize: 18, color: Colors.white),
