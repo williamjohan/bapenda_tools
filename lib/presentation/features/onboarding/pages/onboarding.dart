@@ -151,7 +151,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   ),
                   onPressed: () {
                     if (currentPage == 2) {
-                      print("currentPage: $currentPage");
                       context.go(AppRoutes.login);
                     } else {
                       nextPage();
