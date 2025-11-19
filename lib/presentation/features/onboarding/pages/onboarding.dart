@@ -1,3 +1,4 @@
+import 'package:cekreklamemobile/presentation/features/onboarding/widgets/onboarding_content.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -17,12 +18,10 @@ class _OnboardingPageState extends State<OnboardingPage> {
   Future<void> _completeOnboarding(BuildContext context) async {
     final prefs = await SharedPreferences.getInstance();
 
-    // 1. Set flag agar Onboarding tidak tampil lagi
     await prefs.setBool('isFirstLaunch', false);
 
     if (context.mounted) {
       context.go(AppRoutes.camera);
-      // Menggunakan AppRoutes.camera sesuai definisi Anda.
     }
   }
 
@@ -47,6 +46,12 @@ class _OnboardingPageState extends State<OnboardingPage> {
     },
   ];
 
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
   // Navigasi functions
   void nextPage() {
     if (currentPage < pages.length - 1) {
@@ -55,7 +60,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
         curve: Curves.easeIn,
       );
     } else {
-      //TODO : Navigate to Home page jika ada
+      _completeOnboarding(context);
     }
   }
 
@@ -140,7 +145,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 },
                 itemCount: pages.length,
                 itemBuilder: (context, index) {
-                  return buildPage(pages[index]);
+                  return OnboardingContent(data: pages[index]);
                 },
               ),
             ),
@@ -163,12 +168,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                     ),
                   ),
                   onPressed: () {
-                    if (currentPage == 2) {
-                      _completeOnboarding(context);
-                      // context.go(AppRoutes.camera);
-                    } else {
-                      nextPage();
-                    }
+                    nextPage();
                   },
                   child: Text(
                     currentPage == 2 ? "Get Started" : "Next",

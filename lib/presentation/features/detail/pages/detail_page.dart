@@ -3,7 +3,7 @@
 import 'package:cekreklamemobile/domain/entities/billboard_entity.dart';
 import 'package:flutter/material.dart';
 // Asumsikan kita menggunakan Entity yang sudah kita definisikan sebelumnya:
-import 'package:google_maps_flutter/google_maps_flutter.dart'; // Untuk peta (opsional)
+// Untuk peta (opsional)
 
 class BillboardDetailScreen extends StatelessWidget {
   // 💡 Halaman ini HANYA menerima BillboardEntity.
@@ -192,7 +192,7 @@ class BillboardDetailScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: Colors.black12.withOpacity(0.05),
+            color: Colors.black12.withValues(alpha: 0.05),
             blurRadius: 8,
             offset: const Offset(0, 3),
           ),
@@ -236,7 +236,7 @@ class BillboardDetailScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: color, width: 1.5),
       ),

@@ -93,21 +93,6 @@ class _CheckResultScreenState extends State<CheckResultScreen> {
       // Hanya ambil 3 untuk demo
 
       setState(() {
-        // Tambahkan item tanpa gambar untuk simulasi kasus SBY-004
-        // simulatedResults.add(
-        //   const BillboardEntity(
-        //     id: 'SBY-004',
-        //     name: 'Reklame Ahmad Yani',
-        //     type: 'Billboard',
-        //     address: 'Jl. Ahmad Yani',
-        //     latitude: -7.28,
-        //     longitude: 112.745,
-        //     distanceKm: 0.40,
-        //     owner: 'Swasta',
-        //     isActive: true,
-        //     imageUrl: '',
-        //   ),
-        // );
         if (data.length < 4) {
           // Tambahkan item tanpa gambar untuk simulasi kasus SBY-004 jika belum ada
           data.add(
@@ -134,9 +119,11 @@ class _CheckResultScreenState extends State<CheckResultScreen> {
       setState(() {
         isLoading = false;
       });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Error fetching mock data: $e")));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Error fetching mock data: $e")));
+      }
     }
   }
 
@@ -254,7 +241,7 @@ class _CheckResultScreenState extends State<CheckResultScreen> {
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Colors.black12.withOpacity(0.05),
+                color: Colors.black12.withValues(alpha: 0.05),
                 blurRadius: 5,
                 offset: const Offset(0, 2),
               ),

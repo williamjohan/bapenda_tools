@@ -40,7 +40,7 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     // Ambil warna utama dari tema (asumsi Anda akan set tema nanti)
-    final Color primaryColor = Theme.of(context).colorScheme.primary;
+    // final Color primaryColor = Theme.of(context).colorScheme.primary;
 
     return Scaffold(
       backgroundColor: Colors.white, // Gunakan warna utama aplikasi

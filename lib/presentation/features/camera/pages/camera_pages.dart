@@ -1,4 +1,5 @@
 // lib/presentation/features/capture/pages/capture_screen.dart (disarankan di sini)
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:cekreklamemobile/routes/app_routes.dart';
@@ -7,9 +8,8 @@ import 'package:camera/camera.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart'; // Untuk map preview (opsional, bisa diganti Image.asset)
-
-import '../../../../core/services/permission_service.dart'; // Sesuaikan path
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import '../../../../core/services/permission_service.dart';
 
 class CaptureScreen extends StatefulWidget {
   const CaptureScreen({super.key});
@@ -21,17 +21,16 @@ class CaptureScreen extends StatefulWidget {
 class _CaptureScreenState extends State<CaptureScreen> {
   CameraController? controller;
   bool _isCameraInitialized = false;
-  XFile? _capturedPhoto; // Menyimpan foto yang diambil
-  Position? _currentPosition; // Menyimpan lokasi GPS
-  bool _isLoadingLocation = false; // Status loading GPS
+  XFile? _capturedPhoto;
+  Position? _currentPosition;
+  bool _isLoadingLocation = false;
   FlashMode _currentFlashMode = FlashMode.off;
   Offset? _focusPoint;
-  // ...
+  bool _isCapturing = false;
   double _minZoomLevel = 1.0;
   double _maxZoomLevel = 1.0;
   double _currentZoomLevel = 1.0;
   double _baseZoomLevel = 1.0;
-  // ...
 
   void _handleScaleStart(ScaleStartDetails details) {
     _baseZoomLevel = _currentZoomLevel;
@@ -81,7 +80,8 @@ class _CaptureScreenState extends State<CaptureScreen> {
         _focusPoint = null;
       });
     } on CameraException catch (e) {
-      print("Error focusing: ${e.description}");
+      log("Error focusing: ${e.description}");
+      // print("Error focusing: ${e.description}");
     }
   }
 
@@ -101,6 +101,165 @@ class _CaptureScreenState extends State<CaptureScreen> {
 
     setState(() {
       _currentFlashMode = newMode;
+    });
+  }
+
+  void _resetCapture() {
+    setState(() {
+      _capturedPhoto = null;
+      _currentPosition = null;
+      _isLoadingLocation = false;
+      _isCapturing = false;
+    });
+  }
+
+  Future<void> _navigateToResultsAndReset() async {
+    if (_capturedPhoto == null || _currentPosition == null || !mounted) return;
+
+    // 1. Lakukan Navigasi dan TUNGGU hasilnya (menggunakan await)
+    await context.pushNamed(
+      AppRoutes.results,
+      extra: {
+        'imagePath': _capturedPhoto!.path,
+        'latitude': _currentPosition!.latitude,
+        'longitude': _currentPosition!.longitude,
+      },
+    );
+
+    // 2. Baris ini dijalankan SETELAH pengguna POP kembali ke CaptureScreen
+    // Panggil fungsi reset state lokal
+    _resetCapture();
+  }
+
+  Future<void> _initCameraAndPermissions() async {
+    // 1. Request izin kamera dan lokasi
+    final allowed = await PermissionService.requestCameraAndLocation();
+    if (!allowed) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Izin kamera & lokasi diperlukan")),
+        );
+        // Mungkin arahkan user ke pengaturan atau kembali
+        // Navigator.pop(context);
+      }
+      return;
+    }
+
+    // 2. Setup kamera
+    final cameras = await availableCameras();
+
+    if (!mounted) {
+      return;
+    }
+
+    if (cameras.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Tidak ada kamera tersedia.")),
+      );
+      Navigator.pop(context);
+      return;
+    }
+
+    controller = CameraController(
+      cameras.first,
+      ResolutionPreset.high,
+      enableAudio: false,
+    );
+
+    try {
+      await controller!.initialize();
+      controller!.setFlashMode(_currentFlashMode);
+
+      // 🔍 CETAK NILAI DIAGNOSTIK
+      // debugPrint(
+      //   'Camera Aspect Ratio DILAPORKAN: ${controller!.value.aspectRatio}',
+      // );
+
+      _minZoomLevel = await controller!.getMinZoomLevel();
+      _maxZoomLevel = await controller!.getMaxZoomLevel();
+
+      if (context.mounted) {
+        setState(() => _isCameraInitialized = true);
+      }
+    } on CameraException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Error inisialisasi kamera: ${e.description}"),
+          ),
+        );
+        Navigator.pop(context);
+      }
+    }
+  }
+
+  Future<void> _capturePhotoAndLocation() async {
+    if (!controller!.value.isInitialized || _isCapturing) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Kamera belum siap.")));
+      return;
+    }
+
+    // --- 1. Set Flag ---
+    setState(() {
+      _isCapturing = true;
+    });
+
+    // 1. Cek apakah layanan lokasi aktif
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      // Tampilkan peringatan, dan JANGAN lanjutkan ke langkah 2.
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Layanan GPS tidak aktif. Mohon nyalakan GPS Anda."),
+            duration: Duration(seconds: 4),
+          ),
+        );
+      }
+      Geolocator.openLocationSettings();
+      setState(() {
+        _isCapturing = false; // Reset agar tombol tidak terkunci
+      });
+      // setState(() => _isLoadingLocation = false); // Hentikan loading
+      return; // Hentikan fungsi
+    }
+
+    // 1. Ambil foto
+    try {
+      final file = await controller!.takePicture();
+      setState(() {
+        _capturedPhoto = file;
+        _isLoadingLocation = true; // Mulai loading lokasi
+      });
+
+      // 2. Ambil lokasi GPS
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+      setState(() {
+        _currentPosition = position;
+        _isLoadingLocation = false; // Selesai loading lokasi
+      });
+    } on CameraException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Gagal mengambil foto: ${e.description}")),
+        );
+      }
+      setState(() => _isLoadingLocation = false); // Hentikan loading jika gagal
+    } on PlatformException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Gagal mendapatkan lokasi: ${e.message}")),
+        );
+      }
+      setState(() => _isLoadingLocation = false); // Hentikan loading jika gagal
+    }
+
+    setState(() {
+      _isCapturing = false; // Pastikan flag direset di akhir, baik sukses/gagal
     });
   }
 
@@ -124,118 +283,10 @@ class _CaptureScreenState extends State<CaptureScreen> {
     _initCameraAndPermissions();
   }
 
-  Future<void> _initCameraAndPermissions() async {
-    // 1. Request izin kamera dan lokasi
-    final allowed = await PermissionService.requestCameraAndLocation();
-    if (!allowed) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Izin kamera & lokasi diperlukan")),
-        );
-        // Mungkin arahkan user ke pengaturan atau kembali
-        // Navigator.pop(context);
-      }
-      return;
-    }
-
-    // 2. Setup kamera
-    final cameras = await availableCameras();
-    if (cameras.isEmpty) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Tidak ada kamera tersedia.")),
-        );
-        Navigator.pop(context);
-      }
-      return;
-    }
-
-    controller = CameraController(
-      cameras.first, // Menggunakan kamera belakang pertama
-      ResolutionPreset.medium,
-      enableAudio: false,
-    );
-
-    try {
-      await controller!.initialize();
-      controller!.setFlashMode(_currentFlashMode);
-
-      // 🔍 CETAK NILAI DIAGNOSTIK
-      debugPrint(
-        'Camera Aspect Ratio DILAPORKAN: ${controller!.value.aspectRatio}',
-      );
-
-      _minZoomLevel = await controller!.getMinZoomLevel();
-      _maxZoomLevel = await controller!.getMaxZoomLevel();
-
-      if (context.mounted) {
-        setState(() => _isCameraInitialized = true);
-      }
-    } on CameraException catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Error inisialisasi kamera: ${e.description}"),
-          ),
-        );
-        Navigator.pop(context);
-      }
-    }
-  }
-
   @override
   void dispose() {
     controller?.dispose();
     super.dispose();
-  }
-
-  Future<void> _capturePhotoAndLocation() async {
-    if (!controller!.value.isInitialized) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Kamera belum siap.")));
-      return;
-    }
-
-    // 1. Ambil foto
-    try {
-      final file = await controller!.takePicture();
-      setState(() {
-        _capturedPhoto = file;
-        _isLoadingLocation = true; // Mulai loading lokasi
-      });
-
-      // 2. Ambil lokasi GPS
-      final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-      );
-      setState(() {
-        _currentPosition = position;
-        _isLoadingLocation = false; // Selesai loading lokasi
-      });
-    } on CameraException catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Gagal mengambil foto: ${e.description}")),
-        );
-      }
-      setState(() => _isLoadingLocation = false); // Hentikan loading jika gagal
-    } on PlatformException catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Gagal mendapatkan lokasi: ${e.message}")),
-        );
-      }
-      setState(() => _isLoadingLocation = false); // Hentikan loading jika gagal
-    }
-  }
-
-  void _resetCapture() {
-    setState(() {
-      _capturedPhoto = null;
-      _currentPosition = null;
-      _isLoadingLocation = false;
-    });
   }
 
   @override
@@ -331,16 +382,32 @@ class _CaptureScreenState extends State<CaptureScreen> {
                             ),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(12),
-                              // Contoh: Menggunakan Static Map Image dari Google Maps API (membutuhkan API Key)
-                              // Atau bisa menggunakan Image.asset("assets/map_placeholder.png")
-                              child: Image.network(
-                                "https://maps.googleapis.com/maps/api/staticmap?center=${_currentPosition!.latitude},${_currentPosition!.longitude}&zoom=14&size=400x150&markers=color:red%7C${_currentPosition!.latitude},${_currentPosition!.longitude}&key=YOUR_GOOGLE_MAPS_API_KEY",
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) =>
-                                    Image.asset(
-                                      "assets/images/samplemap.jpg", // Fallback jika tidak ada API key atau error
-                                      fit: BoxFit.cover,
+                              child: GoogleMap(
+                                // Posisi awal kamera di lokasi saat ini
+                                initialCameraPosition: CameraPosition(
+                                  target: LatLng(
+                                    _currentPosition!.latitude,
+                                    _currentPosition!.longitude,
+                                  ),
+                                  zoom: 15, // Zoom level yang cukup dekat
+                                ),
+
+                                // Fitur kontrol dinonaktifkan karena ini hanya preview
+                                myLocationEnabled: false,
+                                zoomControlsEnabled: false,
+                                scrollGesturesEnabled: false,
+                                rotateGesturesEnabled: false,
+
+                                // Marker untuk menandai titik foto
+                                markers: {
+                                  Marker(
+                                    markerId: const MarkerId('currentLocation'),
+                                    position: LatLng(
+                                      _currentPosition!.latitude,
+                                      _currentPosition!.longitude,
                                     ),
+                                  ),
+                                },
                               ),
                             ),
                           )
@@ -364,11 +431,11 @@ class _CaptureScreenState extends State<CaptureScreen> {
                       children: [
                         _buildLocationInfo(
                           Icons.location_pin,
-                          "Lat: ${_currentPosition?.latitude?.toStringAsFixed(4) ?? '-'}",
+                          "Lat: ${_currentPosition?.latitude.toStringAsFixed(4) ?? '-'}",
                         ),
                         _buildLocationInfo(
                           Icons.location_searching,
-                          "Long: ${_currentPosition?.longitude?.toStringAsFixed(4) ?? '-'}",
+                          "Long: ${_currentPosition?.longitude.toStringAsFixed(4) ?? '-'}",
                         ),
                       ],
                     ),
@@ -385,19 +452,10 @@ class _CaptureScreenState extends State<CaptureScreen> {
                           ),
                         ),
                         onPressed:
-                            _currentPosition != null && _capturedPhoto != null
-                            ? () {
-                                // Lanjutkan ke screen hasil dengan data foto dan lokasi
-                                context.pushNamed(
-                                  AppRoutes
-                                      .results, // Menggunakan NAMA rute 'results'
-                                  extra: {
-                                    'imagePath': _capturedPhoto!.path,
-                                    'latitude': _currentPosition!.latitude,
-                                    'longitude': _currentPosition!.longitude,
-                                  },
-                                );
-                              }
+                            _currentPosition != null &&
+                                _capturedPhoto != null &&
+                                !_isLoadingLocation
+                            ? _navigateToResultsAndReset
                             : null, // Disable jika lokasi/foto belum siap
                         child: Text(
                           _isLoadingLocation
@@ -524,7 +582,9 @@ class _CaptureScreenState extends State<CaptureScreen> {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(color: Colors.white, width: 6),
-                    color: Colors.white.withOpacity(0.2), // Sedikit transparan
+                    color: Colors.white.withValues(
+                      alpha: 0.2,
+                    ), // Sedikit transparan
                   ),
                   child: const Icon(
                     Icons.camera_alt,

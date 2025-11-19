@@ -1,5 +1,4 @@
 import 'package:cekreklamemobile/di.dart';
-import 'package:cekreklamemobile/presentation/features/onboarding/pages/onboarding.dart';
 import 'package:cekreklamemobile/routes/app_router.dart';
 import 'package:flutter/material.dart';
 
