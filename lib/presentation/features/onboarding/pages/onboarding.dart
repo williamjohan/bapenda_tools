@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../routes/app_routes.dart';
 
 class OnboardingPage extends StatefulWidget {
@@ -12,6 +13,18 @@ class OnboardingPage extends StatefulWidget {
 class _OnboardingPageState extends State<OnboardingPage> {
   final PageController _pageController = PageController();
   int currentPage = 0;
+
+  Future<void> _completeOnboarding(BuildContext context) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // 1. Set flag agar Onboarding tidak tampil lagi
+    await prefs.setBool('isFirstLaunch', false);
+
+    if (context.mounted) {
+      context.go(AppRoutes.camera);
+      // Menggunakan AppRoutes.camera sesuai definisi Anda.
+    }
+  }
 
   final List<Map<String, dynamic>> pages = [
     {
@@ -151,7 +164,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   ),
                   onPressed: () {
                     if (currentPage == 2) {
-                      context.go(AppRoutes.login);
+                      _completeOnboarding(context);
+                      // context.go(AppRoutes.camera);
                     } else {
                       nextPage();
                     }

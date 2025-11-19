@@ -38,9 +38,12 @@ class _LoginPageState extends State<LoginPage> {
             child: Container(
               margin: const EdgeInsets.symmetric(
                 horizontal: 40, // jarak kiri-kanan dari tepi layar
-                vertical: 90, // jarak atas-bawah dari tepi layar
+                vertical: 50, // jarak atas-bawah dari tepi layar
               ),
-              color: Colors.white.withOpacity(0.2),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                color: Colors.white.withOpacity(0.2),
+              ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(20),
                 child: BackdropFilter(
@@ -90,9 +93,10 @@ class _LoginPageState extends State<LoginPage> {
                             // color: Colors.black54,
                             fontWeight: FontWeight.w700,
                           ),
+                          textAlign: TextAlign.center,
                         ),
 
-                        const SizedBox(height: 32),
+                        const SizedBox(height: 20),
 
                         /// LABEL EMAIL
                         const Align(
@@ -175,15 +179,14 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                         ),
 
-                        const SizedBox(height: 25),
+                        const SizedBox(height: 20),
 
                         /// LOGIN BUTTON
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
                             onPressed: () {
-                              // sementara, langsung ke home
-                              context.go(AppRoutes.home);
+                              context.go(AppRoutes.camera);
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.blue,

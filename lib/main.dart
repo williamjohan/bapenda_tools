@@ -1,8 +1,15 @@
+import 'package:cekreklamemobile/di.dart';
 import 'package:cekreklamemobile/presentation/features/onboarding/pages/onboarding.dart';
 import 'package:cekreklamemobile/routes/app_router.dart';
 import 'package:flutter/material.dart';
 
 void main() {
+  // 1. Pastikan Flutter Binding siap untuk memanggil kode native/async
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // 2. 🟢 Panggil fungsi setupLocator()
+  setupLocator();
+
   runApp(const MyApp());
 }
 
