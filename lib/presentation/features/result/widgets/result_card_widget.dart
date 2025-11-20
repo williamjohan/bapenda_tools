@@ -1,5 +1,5 @@
 import 'dart:typed_data';
-import 'package:cekreklamemobile/domain/entities/billboard_status.dart';
+import 'package:cekreklamemobile/domain/value_objects/billboard_status.dart';
 import 'package:cekreklamemobile/domain/entities/billboard_entity.dart';
 import 'package:flutter/material.dart';
 import '../../../../core/utils/image_utils.dart';

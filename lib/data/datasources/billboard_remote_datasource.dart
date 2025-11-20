@@ -4,12 +4,12 @@ import '../models/billboard_model.dart';
 
 class BillboardRemoteDataSource {
   final Dio dio;
-  static const String BASE_URL = 'http://112.140.162.23:8181/api';
+  static const String baseUrl = 'http://112.140.162.23:8181/api';
 
   BillboardRemoteDataSource(this.dio);
 
   Future<List<BillboardModel>> checkReklame({required String imagePath}) async {
-    const endpoint = '$BASE_URL/ReklameChecker/CheckReklame';
+    const endpoint = '$baseUrl/ReklameChecker/CheckReklame';
 
     // 1. Siapkan File (MultipartFile)
     final fileName = imagePath.split('/').last;

@@ -117,7 +117,7 @@ class _CaptureScreenState extends State<CaptureScreen> {
   Future<void> _navigateToResultsAndReset() async {
     if (_capturedPhoto == null || _currentPosition == null || !mounted) return;
 
-    // 1. Dapatkan File Path nyata dari asset
+    // Dapatkan File Path nyata dari asset
     final String assetFilePath = await getFilePathFromAsset(
       staticTestAssetPath,
     );
@@ -129,8 +129,8 @@ class _CaptureScreenState extends State<CaptureScreen> {
     await context.pushNamed(
       AppRoutes.results,
       extra: {
-        // 'imagePath': _capturedPhoto!.path,
-        'imagePath': assetFilePath,
+        'imagePath': _capturedPhoto!.path,
+        // 'imagePath': assetFilePath,
         'latitude': _currentPosition!.latitude,
         'longitude': _currentPosition!.longitude,
       },

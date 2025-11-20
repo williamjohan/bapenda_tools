@@ -1,11 +1,7 @@
 // lib/domain/entities/billboard_status.dart
 import 'package:flutter/material.dart';
 
-enum BillboardDisplayStatus {
-  Active,
-  Expired,
-  Unknown, // Untuk kasus data API kosong atau parsing error
-}
+enum BillboardDisplayStatus { active, expired, unknown }
 
 class StatusHelper {
   final String text;
