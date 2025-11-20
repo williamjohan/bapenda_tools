@@ -1,9 +1,8 @@
-// lib/presentation/features/detail/pages/billboard_detail_screen.dart
+import 'dart:typed_data';
 
 import 'package:cekreklamemobile/domain/entities/billboard_entity.dart';
 import 'package:flutter/material.dart';
-// Asumsikan kita menggunakan Entity yang sudah kita definisikan sebelumnya:
-// Untuk peta (opsional)
+import 'package:cekreklamemobile/core/utils/image_utils.dart';
 
 class BillboardDetailScreen extends StatelessWidget {
   // 💡 Halaman ini HANYA menerima BillboardEntity.
@@ -14,6 +13,7 @@ class BillboardDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Tentukan warna status
+    final Uint8List? imageBytes = decodeBase64DataUrl(billboard.imageUrl);
     Color statusColor = billboard.isActive ? Colors.green : Colors.red;
     String statusText = billboard.isActive
         ? "Active (Terdaftar)"
@@ -48,14 +48,24 @@ class BillboardDetailScreen extends StatelessWidget {
             Container(
               height: 280,
               width: double.infinity,
-              decoration: BoxDecoration(
-                color: Colors.black12,
-                image: DecorationImage(
-                  // Menggunakan URL dari Entity
-                  image: NetworkImage(billboard.imageUrl),
-                  fit: BoxFit.cover,
-                ),
+              // 💡 Hapus BoxDecoration(image: DecorationImage(...))
+              decoration: const BoxDecoration(
+                color: Colors.black12, // Warna default jika gambar gagal
               ),
+              child: imageBytes != null
+                  ? Image.memory(
+                      // 2. Tampilkan Image.memory jika data ada
+                      imageBytes,
+                      fit: BoxFit.cover,
+                    )
+                  : const Center(
+                      // 3. Tampilkan Placeholder jika data Base64 kosong/gagal
+                      child: Icon(
+                        Icons.photo_size_select_actual_outlined,
+                        color: Colors.grey,
+                        size: 60,
+                      ),
+                    ),
             ),
 
             const SizedBox(height: 16),
@@ -84,11 +94,6 @@ class BillboardDetailScreen extends StatelessWidget {
                     Icons.location_on,
                   ),
                   _detailItem("Tipe", billboard.type, Icons.layers),
-                  _detailItem(
-                    "Pemilik/Vendor",
-                    billboard.owner,
-                    Icons.business,
-                  ),
                   _detailItem(
                     "Status (Pajak/Izin)",
                     statusText,
@@ -180,9 +185,6 @@ class BillboardDetailScreen extends StatelessWidget {
     );
   }
 
-  // -------------------------------
-  // Widget Helpers (Revisi agar menerima Icon)
-  // -------------------------------
   Widget _detailItem(String title, String value, IconData icon) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),

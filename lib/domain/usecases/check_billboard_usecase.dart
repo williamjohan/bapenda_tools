@@ -9,13 +9,13 @@ class CheckBillboardUseCase {
 
   // Use Case utama: mengambil daftar reklame terdekat berdasarkan koordinat.
   Future<List<BillboardEntity>> call({
+    required String imagePath,
     required double latitude,
     required double longitude,
   }) async {
     // Di sini kita bisa menambahkan logika bisnis seperti validasi jarak/rate limit, dll.
-
-    // Memanggil fungsi dari Repository (yang saat ini menggunakan Mock Impl)
-    return await repository.getNearbyBillboards(
+    return await repository.checkBillboardByPhoto(
+      imagePath: imagePath,
       latitude: latitude,
       longitude: longitude,
     );

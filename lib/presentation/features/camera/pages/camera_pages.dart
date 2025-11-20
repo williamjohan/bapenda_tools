@@ -1,7 +1,6 @@
-// lib/presentation/features/capture/pages/capture_screen.dart (disarankan di sini)
 import 'dart:developer';
 import 'dart:io';
-
+import '../../../../core/utils/file_utils.dart';
 import 'package:cekreklamemobile/routes/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
@@ -17,6 +16,8 @@ class CaptureScreen extends StatefulWidget {
   @override
   State<CaptureScreen> createState() => _CaptureScreenState();
 }
+
+const String staticTestAssetPath = 'assets/images/guardian_reklame.jpg';
 
 class _CaptureScreenState extends State<CaptureScreen> {
   CameraController? controller;
@@ -116,11 +117,20 @@ class _CaptureScreenState extends State<CaptureScreen> {
   Future<void> _navigateToResultsAndReset() async {
     if (_capturedPhoto == null || _currentPosition == null || !mounted) return;
 
+    // 1. Dapatkan File Path nyata dari asset
+    final String assetFilePath = await getFilePathFromAsset(
+      staticTestAssetPath,
+    );
+
+    if (!mounted) {
+      return;
+    }
     // 1. Lakukan Navigasi dan TUNGGU hasilnya (menggunakan await)
     await context.pushNamed(
       AppRoutes.results,
       extra: {
-        'imagePath': _capturedPhoto!.path,
+        // 'imagePath': _capturedPhoto!.path,
+        'imagePath': assetFilePath,
         'latitude': _currentPosition!.latitude,
         'longitude': _currentPosition!.longitude,
       },
