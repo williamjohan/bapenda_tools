@@ -1,4 +1,3 @@
-// lib/core/utils/image_utils.dart
 import 'dart:convert';
 import 'dart:typed_data';
 
