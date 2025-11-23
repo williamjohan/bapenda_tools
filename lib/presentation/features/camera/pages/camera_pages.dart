@@ -1,8 +1,8 @@
 import 'dart:developer';
 import 'dart:io';
 import 'package:cekreklamemobile/core/utils/file_copy_utils.dart';
+import 'package:cekreklamemobile/core/utils/file_utils.dart';
 
-import '../../../../core/utils/file_utils.dart';
 import 'package:cekreklamemobile/routes/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
@@ -138,9 +138,9 @@ class _CaptureScreenState extends State<CaptureScreen> {
     if (_capturedPhoto == null || _currentPosition == null || !mounted) return;
 
     // Dapatkan File Path nyata dari asset
-    // final String assetFilePath = await getFilePathFromAsset(
-    //   staticTestAssetPath,
-    // );
+    final String assetFilePath = await getFilePathFromAsset(
+      staticTestAssetPath,
+    );
 
     // 1. Dapatkan file asli
     final File originalFile = File(_capturedPhoto!.path);
@@ -169,8 +169,8 @@ class _CaptureScreenState extends State<CaptureScreen> {
     await context.pushNamed(
       AppRoutes.results,
       extra: {
-        // 'imagePath': assetFilePath,
-        'imagePath': safeFileToUpload.path,
+        'imagePath': assetFilePath,
+        // 'imagePath': safeFileToUpload.path,
         'latitude': _currentPosition!.latitude,
         'longitude': _currentPosition!.longitude,
       },

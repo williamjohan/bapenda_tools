@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'package:cekreklamemobile/domain/value_objects/billboard_status.dart';
 import 'package:cekreklamemobile/domain/entities/billboard_entity.dart';
+import 'package:cekreklamemobile/presentation/features/result/widgets/image_preview_page.dart';
 import 'package:flutter/material.dart';
 import '../../../../core/utils/image_utils.dart';
 
@@ -50,12 +51,26 @@ class ResultCardWidget extends StatelessWidget {
                 child:
                     imageBytes !=
                         null // ✅ Cek apakah bytes gambar tersedia
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.memory(
-                          // 🟢 Gunakan Image.memory
-                          imageBytes,
-                          fit: BoxFit.cover,
+                    ? GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            PageRouteBuilder(
+                              opaque: false,
+                              barrierColor: Colors.black.withValues(alpha: 0.8),
+                              pageBuilder: (_, __, ___) => ImagePreviewPage(
+                                imageBytes: imageBytes,
+                                tag: "img-${billboard.id}",
+                              ),
+                            ),
+                          );
+                        },
+                        child: Hero(
+                          tag: "img-${billboard.id}",
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.memory(imageBytes, fit: BoxFit.cover),
+                          ),
                         ),
                       )
                     : const Icon(
