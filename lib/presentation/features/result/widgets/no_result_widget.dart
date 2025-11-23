@@ -21,9 +21,9 @@ class NoResultsWidget extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start, // Rata kiri untuk judul
         children: [
-          // -------------------------------
-          // 1. JUDUL HASIL TANGKAPAN FOTO
-          // -------------------------------
+          //* -------------------------------
+          //* 1. JUDUL HASIL TANGKAPAN FOTO
+          //* -------------------------------
           const Padding(
             padding: EdgeInsets.only(top: 10, left: 16, right: 16),
             child: Text(
@@ -36,9 +36,9 @@ class NoResultsWidget extends StatelessWidget {
             ),
           ),
 
-          // -------------------------------
-          // 2. TAMPILAN FOTO (Container)
-          // -------------------------------
+          //* -------------------------------
+          //* 2. TAMPILAN FOTO (Container)
+          //* -------------------------------
           Container(
             height: 180, // Ukuran sedang
             width: double.infinity,
@@ -65,9 +65,9 @@ class NoResultsWidget extends StatelessWidget {
             ),
           ),
 
-          // -------------------------------
-          // 3. PESAN NO RESULTS
-          // -------------------------------
+          //* -------------------------------
+          //* 3. PESAN NO RESULTS
+          //* -------------------------------
           Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -75,7 +75,7 @@ class NoResultsWidget extends StatelessWidget {
                 Icon(Icons.block, size: 80, color: Colors.grey[400]),
                 const SizedBox(height: 20),
                 const Text(
-                  "No Billboards Found",
+                  "Tidak Ada Reklame Ditemukan",
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
@@ -86,7 +86,7 @@ class NoResultsWidget extends StatelessWidget {
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 40),
                   child: Text(
-                    "There are no registered billboards within this area. Try moving to a different location.",
+                    "Tidak ada papan reklame terdaftar di area ini. Coba pindah ke lokasi lain.",
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Colors.grey),
                   ),

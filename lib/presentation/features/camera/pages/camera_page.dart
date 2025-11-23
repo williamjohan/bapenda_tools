@@ -1,7 +1,6 @@
 import 'dart:developer';
 import 'dart:io';
 import 'package:cekreklamemobile/core/utils/file_copy_utils.dart';
-import 'package:cekreklamemobile/core/utils/file_utils.dart';
 
 import 'package:cekreklamemobile/routes/app_routes.dart';
 import 'package:flutter/material.dart';
@@ -190,8 +189,6 @@ class _CaptureScreenState extends State<CaptureScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Izin kamera & lokasi diperlukan")),
         );
-        // Mungkin arahkan user ke pengaturan atau kembali
-        // Navigator.pop(context);
       }
       return;
     }
@@ -252,12 +249,12 @@ class _CaptureScreenState extends State<CaptureScreen>
       return;
     }
 
-    // --- 1. Set Flag ---
+    // A. Set Flag Awal
     setState(() {
       _isCapturing = true;
     });
 
-    // 1. Cek apakah layanan lokasi aktif
+    // B. Cek apakah layanan lokasi aktif
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       // Tampilkan peringatan, dan JANGAN lanjutkan ke langkah 2.
@@ -273,24 +270,29 @@ class _CaptureScreenState extends State<CaptureScreen>
       setState(() {
         _isCapturing = false; // Reset agar tombol tidak terkunci
       });
-      // setState(() => _isLoadingLocation = false); // Hentikan loading
-      return; // Hentikan fungsi
+      return;
     }
+
+    //*  ----------------------------------------------------------------
+    //* LOGIC AMBIL FOTO, CROP, DAN GPS
+    //* -----------------------------------------------------------------
+    XFile? finalCroppedFile;
+    Position? finalPosition;
 
     try {
       // 1. Ambil foto
       final XFile capturedFile = await controller!.takePicture();
 
-      // 2. 🟢 BARIS BARU: Panggil Cropper Screen
+      // 2. Panggil Cropper Screen
       final CroppedFile? croppedFile = await ImageCropper().cropImage(
         sourcePath: capturedFile.path,
         compressQuality: 70, // Kompresi 70% untuk mengurangi ukuran payload
         uiSettings: [
           AndroidUiSettings(
-            toolbarTitle: 'Crop Reklame',
+            toolbarTitle: 'Edit Foto',
             toolbarColor: Colors.blue[700],
             toolbarWidgetColor: Colors.white,
-            initAspectRatio: CropAspectRatioPreset.original, // Rasio asli foto
+            initAspectRatio: CropAspectRatioPreset.original,
             lockAspectRatio: false,
           ),
           IOSUiSettings(title: 'Crop Reklame'),
@@ -299,25 +301,29 @@ class _CaptureScreenState extends State<CaptureScreen>
         // cropStyle: CropStyle.rectangle,
       );
 
-      // 3. Jika pengguna membatalkan cropping, keluar fungsi
+      // 3. Jika pengguna membatalkan cropping, hentikan proses
       if (croppedFile == null) {
         return;
       }
 
-      // 4. Update state dengan file BARU yang sudah di-crop
+      // 4. Update data lokal dengan file cropped
+      finalCroppedFile = XFile(croppedFile.path);
+
+      // 5. Mulai loading GPS (Status ini hanya relevan jika kita punya indicator loading global)
       setState(() {
-        _capturedPhoto = XFile(croppedFile.path); // Simpan Cropped File
-        _isLoadingLocation = true; // Mulai loading lokasi
+        _isLoadingLocation = true;
       });
 
-      // 5. Ambil lokasi GPS
-      final position = await Geolocator.getCurrentPosition(
+      // 6. Ambil lokasi GPS
+      finalPosition = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       );
-      //sukses
+
+      // 7. Update state dengan file BARU yang sudah di-crop
       setState(() {
-        _currentPosition = position;
-        _isLoadingLocation = false; // Selesai loading lokasi
+        _capturedPhoto = finalCroppedFile;
+        _currentPosition = finalPosition;
+        _isLoadingLocation = false; // Mulai loading lokasi
       });
     } on CameraException catch (e) {
       if (mounted) {
@@ -335,7 +341,7 @@ class _CaptureScreenState extends State<CaptureScreen>
       setState(() => _isLoadingLocation = false); // Hentikan loading jika gagal
     } finally {
       setState(() {
-        _isCapturing = false; //flag direset di akhir, baik sukses/gagal
+        _isCapturing = false;
       });
     }
   }
@@ -393,199 +399,199 @@ class _CaptureScreenState extends State<CaptureScreen>
   Widget build(BuildContext context) {
     if (!_isCameraInitialized) {
       return const Scaffold(
-        backgroundColor: Colors.black,
-        body: Center(child: CircularProgressIndicator(color: Colors.white)),
+        backgroundColor: Colors.white,
+        body: Center(child: CircularProgressIndicator(color: Colors.black)),
       );
     }
 
-    // // Tampilan setelah foto diambil
-    // if (_capturedPhoto != null) {
-    //   return PopScope(
-    //     // 💡 Mencegat Tombol Fisik BACK (Android) saat Preview
-    //     canPop: false,
-    //     onPopInvokedWithResult: _handlePopInvoked,
-    //     child: Scaffold(
-    //       backgroundColor:
-    //           Colors.grey[100], // Background lebih terang untuk hasil
-    //       body: Stack(
-    //         children: [
-    //           // Gambar yang diambil di bagian atas
-    //           Positioned.fill(
-    //             child: Image.file(
-    //               File(_capturedPhoto!.path),
-    //               fit: BoxFit.cover,
-    //             ),
-    //           ),
-    //           // Header untuk tombol kembali dan settings
-    //           Positioned(
-    //             top: 0,
-    //             left: 0,
-    //             right: 0,
-    //             child: AppBar(
-    //               backgroundColor: Colors.transparent,
-    //               elevation: 0,
-    //               leading: IconButton(
-    //                 icon: const Icon(Icons.arrow_back, color: Colors.white),
-    //                 onPressed: _resetCapture, // Kembali ke mode kamera
-    //               ),
-    //               actions: [
-    //                 IconButton(
-    //                   icon: const Icon(Icons.settings, color: Colors.white),
-    //                   onPressed: () {
-    //                     /* Handle settings */
-    //                   },
-    //                 ),
-    //               ],
-    //             ),
-    //           ),
-    //           // Konten bawah dengan info lokasi
-    //           Align(
-    //             alignment: Alignment.bottomCenter,
-    //             child: Container(
-    //               width: double.infinity,
-    //               padding: const EdgeInsets.all(24.0),
-    //               decoration: const BoxDecoration(
-    //                 color: Colors.white,
-    //                 borderRadius: BorderRadius.only(
-    //                   topLeft: Radius.circular(24),
-    //                   topRight: Radius.circular(24),
-    //                 ),
-    //                 boxShadow: [
-    //                   BoxShadow(
-    //                     color: Colors.black12,
-    //                     blurRadius: 10,
-    //                     spreadRadius: 5,
-    //                   ),
-    //                 ],
-    //               ),
-    //               child: Column(
-    //                 mainAxisSize: MainAxisSize.min,
-    //                 children: [
-    //                   Row(
-    //                     children: [
-    //                       const Icon(Icons.location_on, color: Colors.blue),
-    //                       const SizedBox(width: 8),
-    //                       Text(
-    //                         _currentPosition != null
-    //                             ? "Lokasi GPS Terdeteksi"
-    //                             : "Mencari Lokasi GPS...",
-    //                         style: const TextStyle(
-    //                           fontSize: 18,
-    //                           fontWeight: FontWeight.bold,
-    //                         ),
-    //                       ),
-    //                     ],
-    //                   ),
-    //                   const SizedBox(height: 16),
-    //                   // Tampilan Peta
-    //                   _isLoadingLocation
-    //                       ? const Center(child: CircularProgressIndicator())
-    //                       : _currentPosition != null
-    //                       ? Container(
-    //                           height: 150,
-    //                           decoration: BoxDecoration(
-    //                             borderRadius: BorderRadius.circular(12),
-    //                             border: Border.all(color: Colors.grey[300]!),
-    //                           ),
-    //                           child: ClipRRect(
-    //                             borderRadius: BorderRadius.circular(12),
-    //                             child: GoogleMap(
-    //                               // Posisi awal kamera di lokasi saat ini
-    //                               initialCameraPosition: CameraPosition(
-    //                                 target: LatLng(
-    //                                   _currentPosition!.latitude,
-    //                                   _currentPosition!.longitude,
-    //                                 ),
-    //                                 zoom: 15, // Zoom level yang cukup dekat
-    //                               ),
+    // Tampilan setelah foto diambil
+    if (_capturedPhoto != null) {
+      return PopScope(
+        // 💡 Mencegat Tombol Fisik BACK (Android) saat Preview
+        canPop: false,
+        onPopInvokedWithResult: _handlePopInvoked,
+        child: Scaffold(
+          backgroundColor:
+              Colors.grey[100], // Background lebih terang untuk hasil
+          body: Stack(
+            children: [
+              // Gambar yang diambil di bagian atas
+              Positioned.fill(
+                child: Image.file(
+                  File(_capturedPhoto!.path),
+                  fit: BoxFit.cover,
+                ),
+              ),
+              // Header untuk tombol kembali dan settings
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: AppBar(
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  leading: IconButton(
+                    icon: const Icon(Icons.arrow_back, color: Colors.white),
+                    onPressed: _resetCapture, // Kembali ke mode kamera
+                  ),
+                  actions: [
+                    IconButton(
+                      icon: const Icon(Icons.settings, color: Colors.white),
+                      onPressed: () {
+                        /* Handle settings */
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              // Konten bawah dengan info lokasi
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(24.0),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(24),
+                      topRight: Radius.circular(24),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black12,
+                        blurRadius: 10,
+                        spreadRadius: 5,
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.location_on, color: Colors.blue),
+                          const SizedBox(width: 8),
+                          Text(
+                            _currentPosition != null
+                                ? "Lokasi GPS Terdeteksi"
+                                : "Mencari Lokasi GPS...",
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      // Tampilan Peta
+                      _isLoadingLocation
+                          ? const Center(child: CircularProgressIndicator())
+                          : _currentPosition != null
+                          ? Container(
+                              height: 150,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.grey[300]!),
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: GoogleMap(
+                                  // Posisi awal kamera di lokasi saat ini
+                                  initialCameraPosition: CameraPosition(
+                                    target: LatLng(
+                                      _currentPosition!.latitude,
+                                      _currentPosition!.longitude,
+                                    ),
+                                    zoom: 15, // Zoom level yang cukup dekat
+                                  ),
 
-    //                               // Fitur kontrol dinonaktifkan karena ini hanya preview
-    //                               myLocationEnabled: false,
-    //                               zoomControlsEnabled: false,
-    //                               scrollGesturesEnabled: false,
-    //                               rotateGesturesEnabled: false,
+                                  // Fitur kontrol dinonaktifkan karena ini hanya preview
+                                  myLocationEnabled: false,
+                                  zoomControlsEnabled: false,
+                                  scrollGesturesEnabled: false,
+                                  rotateGesturesEnabled: false,
 
-    //                               // Marker untuk menandai titik foto
-    //                               markers: {
-    //                                 Marker(
-    //                                   markerId: const MarkerId(
-    //                                     'currentLocation',
-    //                                   ),
-    //                                   position: LatLng(
-    //                                     _currentPosition!.latitude,
-    //                                     _currentPosition!.longitude,
-    //                                   ),
-    //                                 ),
-    //                               },
-    //                             ),
-    //                           ),
-    //                         )
-    //                       : Container(
-    //                           height: 150,
-    //                           decoration: BoxDecoration(
-    //                             borderRadius: BorderRadius.circular(12),
-    //                             color: Colors.grey[200],
-    //                           ),
-    //                           child: const Center(
-    //                             child: Text(
-    //                               "Gagal mendapatkan lokasi.",
-    //                               style: TextStyle(color: Colors.grey),
-    //                             ),
-    //                           ),
-    //                         ),
-    //                   const SizedBox(height: 16),
-    //                   // Koordinat
-    //                   Row(
-    //                     mainAxisAlignment: MainAxisAlignment.spaceAround,
-    //                     children: [
-    //                       _buildLocationInfo(
-    //                         Icons.location_pin,
-    //                         "Lat: ${_currentPosition?.latitude.toStringAsFixed(4) ?? '-'}",
-    //                       ),
-    //                       _buildLocationInfo(
-    //                         Icons.location_searching,
-    //                         "Long: ${_currentPosition?.longitude.toStringAsFixed(4) ?? '-'}",
-    //                       ),
-    //                     ],
-    //                   ),
-    //                   const SizedBox(height: 24),
-    //                   // Tombol "Cek Reklame Terdekat"
-    //                   SizedBox(
-    //                     width: double.infinity,
-    //                     child: ElevatedButton(
-    //                       style: ElevatedButton.styleFrom(
-    //                         backgroundColor: Colors.blue[700],
-    //                         padding: const EdgeInsets.symmetric(vertical: 16),
-    //                         shape: RoundedRectangleBorder(
-    //                           borderRadius: BorderRadius.circular(12),
-    //                         ),
-    //                       ),
-    //                       onPressed:
-    //                           _currentPosition != null &&
-    //                               _capturedPhoto != null &&
-    //                               !_isLoadingLocation
-    //                           ? _navigateToResultsAndReset
-    //                           : null, // Disable jika lokasi/foto belum siap
-    //                       child: Text(
-    //                         _isLoadingLocation
-    //                             ? "Mencari Lokasi..."
-    //                             : "Cek Reklame Terdekat",
-    //                         style: const TextStyle(
-    //                           fontSize: 18,
-    //                           color: Colors.white,
-    //                         ),
-    //                       ),
-    //                     ),
-    //                   ),
-    //                 ],
-    //               ),
-    //             ),
-    //           ),
-    //         ],
-    //       ),
-    //     ),
-    //   );
-    // }
+                                  // Marker untuk menandai titik foto
+                                  markers: {
+                                    Marker(
+                                      markerId: const MarkerId(
+                                        'currentLocation',
+                                      ),
+                                      position: LatLng(
+                                        _currentPosition!.latitude,
+                                        _currentPosition!.longitude,
+                                      ),
+                                    ),
+                                  },
+                                ),
+                              ),
+                            )
+                          : Container(
+                              height: 150,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
+                                color: Colors.grey[200],
+                              ),
+                              child: const Center(
+                                child: Text(
+                                  "Gagal mendapatkan lokasi.",
+                                  style: TextStyle(color: Colors.grey),
+                                ),
+                              ),
+                            ),
+                      const SizedBox(height: 16),
+                      // Koordinat
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          _buildLocationInfo(
+                            Icons.location_pin,
+                            "Lat: ${_currentPosition?.latitude.toStringAsFixed(4) ?? '-'}",
+                          ),
+                          _buildLocationInfo(
+                            Icons.location_searching,
+                            "Long: ${_currentPosition?.longitude.toStringAsFixed(4) ?? '-'}",
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      // Tombol "Cek Reklame Terdekat"
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blue[700],
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          onPressed:
+                              _currentPosition != null &&
+                                  _capturedPhoto != null &&
+                                  !_isLoadingLocation
+                              ? _navigateToResultsAndReset
+                              : null, // Disable jika lokasi/foto belum siap
+                          child: Text(
+                            _isLoadingLocation
+                                ? "Mencari Lokasi..."
+                                : "Cek Reklame Terdekat",
+                            style: const TextStyle(
+                              fontSize: 18,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     // Tampilan Kamera Live
     return PopScope(
@@ -657,7 +663,7 @@ class _CaptureScreenState extends State<CaptureScreen>
                 elevation: 0,
                 leading: IconButton(
                   icon: const Icon(Icons.arrow_back, color: Colors.white),
-                  onPressed: () => SystemNavigator.pop(), // Kembali dari screen
+                  onPressed: () => SystemNavigator.pop(),
                 ),
                 actions: [
                   IconButton(
