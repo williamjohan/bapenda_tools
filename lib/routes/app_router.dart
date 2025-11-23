@@ -7,7 +7,7 @@ import 'app_routes.dart';
 import '../presentation/features/onboarding/pages/onboarding.dart';
 import '../presentation/features/auth/pages/login_page.dart';
 import '../presentation/features/auth/pages/signup_page.dart';
-import '../presentation/features/camera/pages/camera_pages.dart';
+import '../presentation/features/camera/pages/camera_page.dart';
 // import other pages when available
 
 final GoRouter appRouter = GoRouter(

@@ -21,7 +21,8 @@ class CaptureScreen extends StatefulWidget {
 
 const String staticTestAssetPath = 'assets/images/guardian_reklame.jpg';
 
-class _CaptureScreenState extends State<CaptureScreen> {
+class _CaptureScreenState extends State<CaptureScreen>
+    with WidgetsBindingObserver {
   CameraController? controller;
   bool _isCameraInitialized = false;
   XFile? _capturedPhoto;
@@ -330,13 +331,36 @@ class _CaptureScreenState extends State<CaptureScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _initCameraAndPermissions();
   }
 
   @override
   void dispose() {
     controller?.dispose();
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Controller harus dipastikan tidak null dan sudah diinisialisasi
+    if (controller == null || !controller!.value.isInitialized) {
+      return;
+    }
+
+    // Jika aplikasi di background (inactive/paused), hentikan kamera
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused) {
+      controller?.dispose(); // Hancurkan controller lama
+      setState(() => _isCameraInitialized = false); // Set state ke loading
+    }
+
+    // Jika aplikasi kembali ke foreground (resumed), inisialisasi ulang
+    if (state == AppLifecycleState.resumed) {
+      // Panggil ulang fungsi inisialisasi
+      _initCameraAndPermissions();
+    }
   }
 
   @override
