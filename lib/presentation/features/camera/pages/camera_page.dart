@@ -170,8 +170,8 @@ class _CaptureScreenState extends State<CaptureScreen>
     await context.pushNamed(
       AppRoutes.results,
       extra: {
-        'imagePath': assetFilePath,
-        // 'imagePath': safeFileToUpload.path,
+        // 'imagePath': assetFilePath,
+        'imagePath': safeFileToUpload.path,
         'latitude': _currentPosition!.latitude,
         'longitude': _currentPosition!.longitude,
       },
