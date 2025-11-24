@@ -1,4 +1,5 @@
 // lib/di.dart
+import 'package:cekreklamemobile/core/services/map_service.dart';
 import 'package:cekreklamemobile/presentation/features/result/bloc/check_result_cubit.dart';
 import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
@@ -35,6 +36,10 @@ void setupLocator() {
   locator.registerFactory<CheckResultCubit>(
     () => CheckResultCubit(locator<CheckBillboardUseCase>()),
   );
+
+  // --- 5 Core Services ---
+  //
+  locator.registerLazySingleton<MapService>(() => MapService());
 
   // ... (Tambahkan Cubit/Bloc di sini nanti)
 }

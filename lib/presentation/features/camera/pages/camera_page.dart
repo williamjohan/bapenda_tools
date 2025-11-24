@@ -1,14 +1,15 @@
+import 'dart:async';
 import 'dart:developer';
 import 'dart:io';
+import 'package:cekreklamemobile/core/services/map_service.dart';
 import 'package:cekreklamemobile/core/utils/file_copy_utils.dart';
-
+import 'package:cekreklamemobile/di.dart';
 import 'package:cekreklamemobile/routes/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:image_cropper/image_cropper.dart';
 import '../../../../core/services/permission_service.dart';
 
@@ -35,6 +36,7 @@ class _CaptureScreenState extends State<CaptureScreen>
   double _maxZoomLevel = 1.0;
   double _currentZoomLevel = 1.0;
   double _baseZoomLevel = 1.0;
+  String? _mapImageUrl;
 
   void _handleScaleStart(ScaleStartDetails details) {
     _baseZoomLevel = _currentZoomLevel;
@@ -112,6 +114,7 @@ class _CaptureScreenState extends State<CaptureScreen>
     setState(() {
       _capturedPhoto = null;
       _currentPosition = null;
+      _mapImageUrl = null;
       _isLoadingLocation = false;
       _isCapturing = false;
     });
@@ -277,7 +280,7 @@ class _CaptureScreenState extends State<CaptureScreen>
     //* LOGIC AMBIL FOTO, CROP, DAN GPS
     //* -----------------------------------------------------------------
     XFile? finalCroppedFile;
-    Position? finalPosition;
+    Position? position;
 
     try {
       // 1. Ambil foto
@@ -311,20 +314,40 @@ class _CaptureScreenState extends State<CaptureScreen>
 
       // 5. Mulai loading GPS (Status ini hanya relevan jika kita punya indicator loading global)
       setState(() {
+        _capturedPhoto = finalCroppedFile;
         _isLoadingLocation = true;
       });
 
       // 6. Ambil lokasi GPS
-      finalPosition = await Geolocator.getCurrentPosition(
+      position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
+      ).timeout(const Duration(seconds: 10)); // Timeout setelah 10 detik
+
+      // 🟢 KOREKSI INTI: Panggil MapService dari locator
+      final mapService = locator<MapService>();
+      final mapUrl = mapService.generateStaticMapUrl(
+        lat: position.latitude,
+        long: position.longitude,
       );
 
       // 7. Update state dengan file BARU yang sudah di-crop
       setState(() {
-        _capturedPhoto = finalCroppedFile;
-        _currentPosition = finalPosition;
+        _mapImageUrl = mapUrl;
+        _currentPosition = position;
         _isLoadingLocation = false; // Mulai loading lokasi
       });
+    } on TimeoutException {
+      // 💡 TANGANI ERROR KHUSUS TIMEOUT
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Gagal mendapatkan lokasi GPS: Waktu habisf"),
+          ),
+        );
+      }
+      setState(() => _isLoadingLocation = false);
+      // Karena lokasi gagal, kita harus membiarkan _capturedPhoto di-reset
+      _resetCapture();
     } on CameraException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -495,35 +518,36 @@ class _CaptureScreenState extends State<CaptureScreen>
                               ),
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(12),
-                                child: GoogleMap(
-                                  // Posisi awal kamera di lokasi saat ini
-                                  initialCameraPosition: CameraPosition(
-                                    target: LatLng(
-                                      _currentPosition!.latitude,
-                                      _currentPosition!.longitude,
-                                    ),
-                                    zoom: 15, // Zoom level yang cukup dekat
-                                  ),
-
-                                  // Fitur kontrol dinonaktifkan karena ini hanya preview
-                                  myLocationEnabled: false,
-                                  zoomControlsEnabled: false,
-                                  scrollGesturesEnabled: false,
-                                  rotateGesturesEnabled: false,
-
-                                  // Marker untuk menandai titik foto
-                                  markers: {
-                                    Marker(
-                                      markerId: const MarkerId(
-                                        'currentLocation',
-                                      ),
-                                      position: LatLng(
-                                        _currentPosition!.latitude,
-                                        _currentPosition!.longitude,
-                                      ),
-                                    ),
-                                  },
-                                ),
+                                child: _mapImageUrl != null
+                                    ? Image.network(
+                                        // 🟢 KOREKSI: Gunakan Image.network
+                                        _mapImageUrl!,
+                                        fit: BoxFit.cover,
+                                        // Tambahkan placeholder/loading saat gambar diunduh
+                                        loadingBuilder:
+                                            (context, child, loadingProgress) {
+                                              if (loadingProgress == null)
+                                                return child;
+                                              return const Center(
+                                                child:
+                                                    CircularProgressIndicator(),
+                                              );
+                                            },
+                                        errorBuilder:
+                                            (context, error, stackTrace) {
+                                              return const Center(
+                                                child: Text(
+                                                  "Gagal memuat peta.",
+                                                  style: TextStyle(
+                                                    color: Colors.red,
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                      )
+                                    : const Center(
+                                        child: Text("Memuat Peta..."),
+                                      ), // Fallback jika URL null
                               ),
                             )
                           : Container(

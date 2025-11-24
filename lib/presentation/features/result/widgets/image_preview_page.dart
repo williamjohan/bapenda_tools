@@ -16,7 +16,7 @@ class ImagePreviewPage extends StatelessWidget {
     return GestureDetector(
       onTap: () => Navigator.pop(context), // Tap anywhere to close
       child: Scaffold(
-        backgroundColor: Colors.black.withOpacity(0.9),
+        backgroundColor: Colors.black.withValues(alpha: 0.9),
         body: Center(
           child: Hero(
             tag: tag,
