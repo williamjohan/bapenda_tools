@@ -24,7 +24,7 @@ class _NearbyBillboardCardState extends State<NearbyBillboardCard>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      _fetchLocationStatusAndMap(); // Muat ulang status dan peta
+      _fetchLocationStatusAndMap();
     }
   }
 
@@ -39,7 +39,7 @@ class _NearbyBillboardCardState extends State<NearbyBillboardCard>
   @override
   void dispose() {
     _positionSubscription?.cancel();
-    WidgetsBinding.instance.removeObserver(this); // Wajib dihapus!
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
@@ -49,46 +49,50 @@ class _NearbyBillboardCardState extends State<NearbyBillboardCard>
     final serviceEnabled = await Geolocator.isLocationServiceEnabled();
 
     if (!serviceEnabled) {
-      // 2. Jika GPS mati, tampilkan modal error
-      showAppModal(
-        context: context,
-        content: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Image.asset(
-              'assets/images/no_location.png',
-              width: double.infinity,
-              height: 150,
-            ),
-            SizedBox(height: 10),
-            Text(
-              "Untuk melanjutkan pengecekan reklame, mohon aktifkan layanan lokasi (GPS) pada perangkat Anda.",
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16),
-            ),
-          ],
-        ),
-        primaryButton: ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF175CFF),
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
+      if (mounted) {
+        // 2. Jika GPS mati, tampilkan modal error
+        showAppModal(
+          context: context,
+          content: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Image.asset(
+                'assets/images/no_location.png',
+                width: double.infinity,
+                height: 150,
+              ),
+              SizedBox(height: 10),
+              Text(
+                "Untuk melanjutkan pengecekan reklame, mohon aktifkan layanan lokasi (GPS) pada perangkat Anda.",
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 16),
+              ),
+            ],
           ),
-          onPressed: () {
-            Navigator.pop(context);
-            Geolocator.openLocationSettings();
-          },
-          child: const Text("Buka Pengaturan Lokasi"),
-        ),
-        showCloseButton: false,
-        isDismissible: true,
-      );
+          primaryButton: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF175CFF),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            onPressed: () {
+              Navigator.pop(context);
+              Geolocator.openLocationSettings();
+            },
+            child: const Text("Buka Pengaturan Lokasi"),
+          ),
+          showCloseButton: false,
+          isDismissible: true,
+        );
+      }
     } else {
       // 3. Jika GPS aktif, navigasi ke CameraPage
-      context.pushNamed(AppRoutes.camera);
+      if (mounted) {
+        context.pushNamed(AppRoutes.camera);
+      }
     }
   }
 
@@ -112,7 +116,6 @@ class _NearbyBillboardCardState extends State<NearbyBillboardCard>
 
   // --- Logic Fetch Lokasi dan Status ---
   Future<void> _fetchLocationStatusAndMap() async {
-    // Pastikan stream lama dibatalkan sebelum membuat yang baru
     await _positionSubscription?.cancel();
 
     // 💡 SET LOADING AWAL: Penting agar skeleton muncul saat fetch data.
@@ -248,14 +251,6 @@ class _NearbyBillboardCardState extends State<NearbyBillboardCard>
               ],
             ),
             const SizedBox(height: 10),
-            if (!_isLoading && _currentPosition != null) ...[
-              const SizedBox(height: 8),
-              Text(
-                'Lat: ${_currentPosition!.latitude.toStringAsFixed(6)}, Long: ${_currentPosition!.longitude.toStringAsFixed(6)}',
-                style: TextStyle(fontSize: 12, color: Colors.grey),
-              ),
-            ],
-
             // Tampilan Peta Statis
             Container(
               height: 140,
@@ -285,6 +280,12 @@ class _NearbyBillboardCardState extends State<NearbyBillboardCard>
                     : _buildServiceDisabledPlaceholder(context),
               ),
             ),
+            if (!_isLoading && _currentPosition != null) ...[
+              Text(
+                'Lat: ${_currentPosition!.latitude.toStringAsFixed(6)}, Long: ${_currentPosition!.longitude.toStringAsFixed(6)}',
+                style: TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+            ],
           ],
         ),
       ),
