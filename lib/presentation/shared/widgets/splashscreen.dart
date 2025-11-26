@@ -11,61 +11,73 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
+
   @override
   void initState() {
     super.initState();
-    _checkFirstLaunchAndNavigate();
+
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    );
+
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.1),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+
+    _controller.forward();
+
+    _checkNavigation();
   }
 
-  Future<void> _checkFirstLaunchAndNavigate() async {
-    // Pastikan Shared Preferences sudah siap
+  Future<void> _checkNavigation() async {
     final prefs = await SharedPreferences.getInstance();
-
-    // Default-nya adalah true jika belum pernah diset
     final bool isFirstLaunch = prefs.getBool('isFirstLaunch') ?? true;
 
-    // Jeda waktu untuk efek branding (2 detik)
     await Future.delayed(const Duration(seconds: 3));
-
     if (!mounted) return;
 
     if (isFirstLaunch) {
       context.go(AppRoutes.onboarding);
     } else {
-      context.go(AppRoutes.camera);
+      context.go(AppRoutes.home);
     }
   }
 
   @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // Ambil warna utama dari tema (asumsi Anda akan set tema nanti)
-    // final Color primaryColor = Theme.of(context).colorScheme.primary;
-
     return Scaffold(
-      backgroundColor: Colors.white, // Gunakan warna utama aplikasi
+      backgroundColor: Colors.white,
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            // 🖼️ Logo Aplikasi (Ganti dengan Asset Anda)
-            Image.asset('assets/images/logosby.png', height: 150),
-            const SizedBox(height: 16),
-
-            const Text(
-              'Cek Reklame Surabaya',
-              style: TextStyle(
-                color: Colors.black,
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: SlideTransition(
+            position: _slideAnimation,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Image.asset('assets/images/city_of_heroes.png', height: 175),
+                const SizedBox(height: 16),
+              ],
             ),
-            const SizedBox(height: 8),
-            const Text(
-              'Validasi Cepat, Kota Tertib',
-              style: TextStyle(color: Colors.black45, fontSize: 16),
-            ),
-          ],
+          ),
         ),
       ),
     );

@@ -1,14 +1,15 @@
 import 'package:cekreklamemobile/domain/entities/billboard_entity.dart';
 import 'package:cekreklamemobile/presentation/features/detail/pages/detail_page.dart';
+import 'package:cekreklamemobile/presentation/features/home/pages/home_page.dart';
 import 'package:cekreklamemobile/presentation/features/result/pages/check_result.dart';
 import 'package:cekreklamemobile/presentation/shared/widgets/splashscreen.dart';
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'app_routes.dart';
 import '../presentation/features/onboarding/pages/onboarding.dart';
 import '../presentation/features/auth/pages/login_page.dart';
 import '../presentation/features/auth/pages/signup_page.dart';
 import '../presentation/features/camera/pages/camera_page.dart';
-// import other pages when available
 
 final GoRouter appRouter = GoRouter(
   initialLocation: AppRoutes.splashscreen,
@@ -25,7 +26,6 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) => const OnboardingPage(),
     ),
 
-    // Add other routes here
     GoRoute(
       path: AppRoutes.login,
       name: AppRoutes.login,
@@ -65,11 +65,21 @@ final GoRouter appRouter = GoRouter(
       path: AppRoutes.detail,
       name: AppRoutes.detail,
       builder: (context, state) {
-        // Menerima Entity dari CheckResultScreen (melalui .pushNamed(extra: ...))
         final billboard = state.extra as BillboardEntity;
-
         return BillboardDetailScreen(billboard: billboard);
       },
+    ),
+
+    GoRoute(
+      path: AppRoutes.home,
+      name: AppRoutes.home,
+      pageBuilder: (context, state) => CustomTransitionPage(
+        key: state.pageKey,
+        child: const HomePage(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+      ),
     ),
   ],
 );
