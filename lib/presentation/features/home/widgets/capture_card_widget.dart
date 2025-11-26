@@ -47,6 +47,7 @@ class CaptureBillboardButton extends StatelessWidget {
           isDismissible: true,
         );
       },
+      splashColor: Colors.white.withValues(alpha: 0.2),
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(

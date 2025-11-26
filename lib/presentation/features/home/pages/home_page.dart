@@ -1,6 +1,6 @@
 import 'package:cekreklamemobile/presentation/features/home/widgets/capture_card_widget.dart';
 import 'package:cekreklamemobile/presentation/features/home/widgets/greeting_card_widget.dart';
-import 'package:cekreklamemobile/presentation/features/home/widgets/nearby_card_widget.dart';
+import 'package:cekreklamemobile/presentation/features/home/widgets/cek_reklame_card_widget.dart';
 import 'package:cekreklamemobile/presentation/features/home/widgets/report_card_widget.dart';
 import 'package:cekreklamemobile/presentation/shared/widgets/bottom_navigation_widget.dart';
 import 'package:flutter/material.dart';

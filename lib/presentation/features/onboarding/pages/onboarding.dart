@@ -21,7 +21,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
     await prefs.setBool('isFirstLaunch', false);
 
     if (context.mounted) {
-      context.go(AppRoutes.camera);
+      context.go(AppRoutes.home);
     }
   }
 
