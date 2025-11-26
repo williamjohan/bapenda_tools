@@ -2,7 +2,7 @@ import 'package:cekreklamemobile/domain/entities/billboard_entity.dart';
 import 'package:cekreklamemobile/presentation/features/detail/pages/detail_page.dart';
 import 'package:cekreklamemobile/presentation/features/home/pages/home_page.dart';
 import 'package:cekreklamemobile/presentation/features/result/pages/check_result.dart';
-import 'package:cekreklamemobile/presentation/shared/widgets/splashscreen.dart';
+import 'package:cekreklamemobile/splashscreen.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'app_routes.dart';
@@ -81,5 +81,7 @@ final GoRouter appRouter = GoRouter(
         },
       ),
     ),
+
+    // Tambahkan route lainnya di sini
   ],
 );

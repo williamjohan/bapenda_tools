@@ -134,7 +134,7 @@ class _CaptureScreenState extends State<CaptureScreen>
     } else {
       // STATE 1: Live camera (Root). Kita ingin keluar aplikasi.
       // Panggil pop secara manual untuk melanjutkan aksi pop/exit.
-      SystemNavigator.pop();
+      context.go(AppRoutes.home);
     }
   }
 
@@ -526,8 +526,9 @@ class _CaptureScreenState extends State<CaptureScreen>
                                         // Tambahkan placeholder/loading saat gambar diunduh
                                         loadingBuilder:
                                             (context, child, loadingProgress) {
-                                              if (loadingProgress == null)
+                                              if (loadingProgress == null) {
                                                 return child;
+                                              }
                                               return const Center(
                                                 child:
                                                     CircularProgressIndicator(),
@@ -599,7 +600,7 @@ class _CaptureScreenState extends State<CaptureScreen>
                           child: Text(
                             _isLoadingLocation
                                 ? "Mencari Lokasi..."
-                                : "Cek Reklame Terdekat",
+                                : "Submit Laporan Reklame",
                             style: const TextStyle(
                               fontSize: 18,
                               color: Colors.white,
@@ -687,7 +688,7 @@ class _CaptureScreenState extends State<CaptureScreen>
                 elevation: 0,
                 leading: IconButton(
                   icon: const Icon(Icons.arrow_back, color: Colors.white),
-                  onPressed: () => SystemNavigator.pop(),
+                  onPressed: () => context.go(AppRoutes.home),
                 ),
                 actions: [
                   IconButton(

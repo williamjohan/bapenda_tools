@@ -45,7 +45,7 @@ Widget buildBottomNav() {
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: const [
         BottomNavItem(icon: Icons.home, label: "Home", active: true),
-        BottomNavItem(icon: Icons.map, label: "Map"),
+        BottomNavItem(icon: Icons.map, label: "Cek"),
         BottomNavItem(icon: Icons.person, label: "Profile"),
       ],
     ),

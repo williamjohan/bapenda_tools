@@ -1,6 +1,5 @@
-import 'package:cekreklamemobile/routes/app_routes.dart';
+import 'package:cekreklamemobile/presentation/shared/widgets/custom_modal_widget.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 class CaptureBillboardButton extends StatelessWidget {
   const CaptureBillboardButton({super.key});
@@ -10,7 +9,43 @@ class CaptureBillboardButton extends StatelessWidget {
     return InkWell(
       borderRadius: BorderRadius.circular(20),
       onTap: () {
-        context.go(AppRoutes.camera);
+        showAppModal(
+          context: context,
+          content: Column(
+            children: [
+              Image.asset(
+                'assets/images/feat_comingsoon.png',
+                width: double.infinity,
+                height: 150,
+              ),
+              SizedBox(height: 10),
+              Text(
+                'Mohon Maaf, fitur ini masih dalam tahap pengembangan dan akan segera hadir dalam waktu dekat.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 16),
+              ),
+            ],
+          ),
+          primaryButton: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF175CFF),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            child: const Text(
+              'OK',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          ),
+          showCloseButton: false,
+          isDismissible: true,
+        );
       },
       child: Container(
         padding: const EdgeInsets.all(20),
