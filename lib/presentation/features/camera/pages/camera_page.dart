@@ -356,15 +356,46 @@ class _CaptureScreenState extends State<CaptureScreen>
               children: [
                 // 2a. Camera Preview (dengan Glitch Fix dan Gesture)
                 Positioned.fill(
-                  child: GestureDetector(
-                    onTapDown: _handleTapToFocus,
-                    onScaleStart: _handleScaleStart,
-                    onScaleUpdate: _handleScaleUpdate,
-                    child: ClipRRect(
-                      // Wajib untuk membersihkan tepi
-                      child: CameraPreview(
-                        controller!,
-                      ), // Gunakan CameraPreview yang paling sederhana
+                  child: AnimatedOpacity(
+                    // Tetap pertahankan AnimatedOpacity untuk masking transisi
+                    opacity: _isCameraInitialized ? 1.0 : 0.0,
+                    duration: const Duration(milliseconds: 400),
+                    child: ColoredBox(
+                      color: Colors.black, // Masking background
+                      child: GestureDetector(
+                        onTapDown: _handleTapToFocus,
+                        onScaleStart: _handleScaleStart,
+                        onScaleUpdate: _handleScaleUpdate,
+
+                        // 🟢 KOREKSI KRUSIAL: Kembalikan LayoutBuilder dan FittedBox
+                        child: ClipRRect(
+                          // ClipRRect harus membungkus LayoutBuilder
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              final screenWidth = constraints.maxWidth;
+                              // Catatan: controller!.value.aspectRatio memberikan rasio terbalik di beberapa perangkat,
+                              // jadi kita gunakan 1 / rasio untuk mendapatkan nilai H:W (0.75) yang benar.
+                              final cameraRatio =
+                                  1 / controller!.value.aspectRatio;
+
+                              final requiredPreviewHeight =
+                                  screenWidth / cameraRatio;
+
+                              return SizedBox.expand(
+                                child: FittedBox(
+                                  fit: BoxFit.cover, // Wajib COVER
+                                  child: SizedBox(
+                                    width: screenWidth,
+                                    height:
+                                        requiredPreviewHeight, // Tinggi dihitung berdasarkan rasio yang benar
+                                    child: CameraPreview(controller!),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),
