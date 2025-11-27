@@ -1,10 +1,9 @@
 import 'package:cekreklamemobile/core/services/map_service.dart';
 import 'package:cekreklamemobile/di.dart';
 import 'package:cekreklamemobile/presentation/shared/widgets/custom_modal_widget.dart';
-import 'package:cekreklamemobile/routes/app_routes.dart';
+import 'package:cekreklamemobile/presentation/features/home/home_handlers.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:go_router/go_router.dart';
 import 'dart:async';
 
 class NearbyBillboardCard extends StatefulWidget {
@@ -20,6 +19,7 @@ class _NearbyBillboardCardState extends State<NearbyBillboardCard>
   String? _mapImageUrl;
   bool _isLoading = true;
   bool _isLocationServiceEnabled = false;
+  LocationPermission _locationPermissionStatus = LocationPermission.denied;
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
@@ -91,12 +91,12 @@ class _NearbyBillboardCardState extends State<NearbyBillboardCard>
     } else {
       // 3. Jika GPS aktif, navigasi ke CameraPage
       if (mounted) {
-        context.pushNamed(AppRoutes.camera);
+        handleCaptureTap(context);
       }
     }
   }
 
-  // 💡 HELPER BARU: Logic Update Map yang dapat dipanggil oleh Stream
+  // Logic Update Map yang dapat dipanggil oleh Stream
   void _updateMapAndLocation(Position position) {
     final mapService = locator<MapService>();
     final mapUrl = mapService.generateStaticMapUrl(
@@ -117,22 +117,29 @@ class _NearbyBillboardCardState extends State<NearbyBillboardCard>
   // --- Logic Fetch Lokasi dan Status ---
   Future<void> _fetchLocationStatusAndMap() async {
     await _positionSubscription?.cancel();
-
-    // 💡 SET LOADING AWAL: Penting agar skeleton muncul saat fetch data.
     if (mounted) {
       setState(() => _isLoading = true);
     }
 
-    // 1. Cek Status Service GPS
+    // --- Cek Izin (Permission) ---
+    final permissionStatus = await Geolocator.checkPermission();
+    if (mounted) setState(() => _locationPermissionStatus = permissionStatus);
+
+    if (permissionStatus == LocationPermission.denied ||
+        permissionStatus == LocationPermission.deniedForever) {
+      if (mounted) setState(() => _isLoading = false);
+      return;
+    }
+
+    // --- Cek Service GPS ---
     final serviceEnabled = await Geolocator.isLocationServiceEnabled();
 
-    // 2. Jika service mati, matikan loading dan set status
+    // Jika service mati, pastikan *semua* status non-positif diatur
     if (!serviceEnabled) {
-      // 🛑 Jika service mati: Update status dan matikan loading
       if (mounted) {
         setState(() {
-          _isLocationServiceEnabled = false; // Status mati
-          _isLoading = false; // Hentikan loading
+          _isLocationServiceEnabled = false; // 👈 Status GPS Mati
+          _isLoading = false;
         });
       }
       return;
@@ -166,8 +173,6 @@ class _NearbyBillboardCardState extends State<NearbyBillboardCard>
       if (mounted) {
         // 5. Gagal mengambil lokasi awal
         setState(() {
-          // Hanya matikan loading jika fetch awal gagal
-          _isLocationServiceEnabled = true;
           _isLoading = false;
         });
       }
@@ -209,7 +214,7 @@ class _NearbyBillboardCardState extends State<NearbyBillboardCard>
     return InkWell(
       onTap: _onTapCard, // Panggil logic tap
       child: Container(
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.fromLTRB(10, 18, 18, 5),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
@@ -251,9 +256,11 @@ class _NearbyBillboardCardState extends State<NearbyBillboardCard>
               ],
             ),
             const SizedBox(height: 10),
-            // Tampilan Peta Statis
+            //* ==========================================
+            //*          WIDGET UNTUK MAP IMAGE
+            //* ==========================================
             Container(
-              height: 140,
+              height: 150,
               decoration: BoxDecoration(
                 color: Colors.grey.shade300,
                 borderRadius: BorderRadius.circular(16),
@@ -262,10 +269,14 @@ class _NearbyBillboardCardState extends State<NearbyBillboardCard>
                 borderRadius: BorderRadius.circular(16),
                 child: _isLoading
                     ? const Center(child: CircularProgressIndicator())
-                    // 🟢 KOREKSI: Jika service mati, TAMPILKAN PLACEHOLDER
+                    // Kondisi 1 : Jika service mati, TAMPILKAN PLACEHOLDER
                     : !_isLocationServiceEnabled
-                    ? _buildServiceDisabledPlaceholder(context)
-                    // Status 3: Service Aktif DAN Lokasi Ditemukan
+                    ? _buildServiceDisabledPlaceholder(
+                        context,
+                        status: _locationPermissionStatus,
+                        serviceEnabled: _isLocationServiceEnabled,
+                      )
+                    // Kondisi 2 :  Service Aktif DAN Lokasi Ditemukan
                     : _mapImageUrl != null
                     ? Image.network(
                         _mapImageUrl!,
@@ -273,17 +284,47 @@ class _NearbyBillboardCardState extends State<NearbyBillboardCard>
                         errorBuilder: (context, error, stackTrace) =>
                             _buildServiceDisabledPlaceholder(
                               context,
-                              message: "Gagal memuat peta.",
+                              // Ini adalah pesan error jaringan/API (Service Active, tapi gagal muat)
+                              message:
+                                  "Gagal memuat peta. Periksa koneksi Anda.",
+                              status: _locationPermissionStatus,
+                              serviceEnabled: _isLocationServiceEnabled,
                             ),
                       )
-                    // Status 4: Service Aktif tapi _mapImageUrl masih null (gagal fetch awal)
-                    : _buildServiceDisabledPlaceholder(context),
+                    // Kondisi 3 : Service Aktif tapi _mapImageUrl masih null (gagal fetch awal)
+                    : _buildServiceDisabledPlaceholder(
+                        context,
+                        status: _locationPermissionStatus,
+                        serviceEnabled: _isLocationServiceEnabled,
+                        message: "Memuat lokasi...",
+                      ),
               ),
             ),
-            if (!_isLoading && _currentPosition != null) ...[
-              Text(
-                'Lat: ${_currentPosition!.latitude.toStringAsFixed(6)}, Long: ${_currentPosition!.longitude.toStringAsFixed(6)}',
-                style: TextStyle(fontSize: 12, color: Colors.grey),
+
+            //* ==========================================
+            //*      WIDGET UNTUK KOORDINAT LOKASI
+            //* ==========================================
+            if (!_isLoading &&
+                _currentPosition != null &&
+                _isLocationServiceEnabled) ...[
+              const SizedBox(height: 8), // Padding setelah status badge
+              Row(
+                children: [
+                  // Ikon Lokasi yang sedang aktif
+                  Icon(
+                    Icons.my_location,
+                    size: 14,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primary, // Warna Biru Tema
+                  ),
+                  const SizedBox(width: 4),
+                  // Teks Koordinat
+                  Text(
+                    'Lat: ${_currentPosition!.latitude.toStringAsFixed(6)}, Long: ${_currentPosition!.longitude.toStringAsFixed(6)}',
+                    style: const TextStyle(fontSize: 12, color: Colors.black54),
+                  ),
+                ],
               ),
             ],
           ],
@@ -296,18 +337,50 @@ class _NearbyBillboardCardState extends State<NearbyBillboardCard>
 Widget _buildServiceDisabledPlaceholder(
   BuildContext context, {
   String? message,
+  required LocationPermission status,
+  required bool serviceEnabled,
 }) {
+  // debugPrint(
+  //   'Placeholder Status Check: Service=${serviceEnabled}, Permission=${status.name}',
+  // );
+  String finalMessage = message ?? "Informasi tidak tersedia.";
+
+  // 1. Prioritas Tertinggi: Ditolak Permanen
+  if (status == LocationPermission.deniedForever) {
+    finalMessage = "Izin ditolak permanen. Aktifkan di Pengaturan Aplikasi.";
+  }
+  // 🟢 KOREKSI 1: Prioritaskan Izin Ditolak Sementara (Soft Denied)
+  else if (status == LocationPermission.denied) {
+    finalMessage =
+        "Akses Lokasi belum diberikan. Klik 'Capture' untuk meminta izin.";
+  }
+  // 2. Prioritas Terakhir: Layanan GPS Dimatikan (Service Toggle)
+  else if (!serviceEnabled) {
+    finalMessage = "Layanan Lokasi (GPS) dimatikan. Mohon nyalakan.";
+  }
+
+  if (message != null &&
+      message.isNotEmpty &&
+      finalMessage.contains("Informasi tidak tersedia")) {
+    finalMessage = message;
+  }
+
   return Center(
     child: Padding(
-      padding: const EdgeInsets.only(top: 10),
+      padding: const EdgeInsets.only(top: 15.0),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        // ...
         children: [
-          Image.asset('assets/images/map_inactive.png', width: 75, height: 75),
+          Image.asset(
+            'assets/images/map_inactive.png',
+            width: 75,
+            height: 75,
+            opacity: AlwaysStoppedAnimation(0.5),
+          ),
           const SizedBox(height: 8),
           Text(
-            message ?? "Lokasi diperlukan \n untuk menampilkan peta.",
-            maxLines: 2,
+            finalMessage, // ✅ Menggunakan pesan yang sudah ditentukan
+            maxLines: 3,
             style: TextStyle(color: Colors.grey[700], fontSize: 12),
             textAlign: TextAlign.center,
           ),
