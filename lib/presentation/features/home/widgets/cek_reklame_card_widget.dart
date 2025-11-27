@@ -214,7 +214,7 @@ class _NearbyBillboardCardState extends State<NearbyBillboardCard>
     return InkWell(
       onTap: _onTapCard, // Panggil logic tap
       child: Container(
-        padding: const EdgeInsets.fromLTRB(10, 18, 18, 5),
+        padding: const EdgeInsets.fromLTRB(10, 10, 10, 5),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),

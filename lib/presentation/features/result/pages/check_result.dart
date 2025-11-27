@@ -1,6 +1,6 @@
 import 'package:cekreklamemobile/di.dart';
 import 'package:cekreklamemobile/presentation/features/result/bloc/check_result_cubit.dart';
-import 'package:cekreklamemobile/presentation/features/result/widgets/check_result_view.dart';
+import 'package:cekreklamemobile/presentation/features/result/widgets/check_result_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 

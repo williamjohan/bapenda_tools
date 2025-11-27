@@ -1,9 +1,7 @@
 import 'dart:async';
 import 'dart:developer';
 import 'dart:io';
-import 'package:cekreklamemobile/core/services/map_service.dart';
 import 'package:cekreklamemobile/core/utils/file_copy_utils.dart';
-import 'package:cekreklamemobile/di.dart';
 import 'package:cekreklamemobile/routes/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
@@ -11,7 +9,6 @@ import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_cropper/image_cropper.dart';
-import '../../../../core/services/permission_service.dart';
 
 class CaptureScreen extends StatefulWidget {
   const CaptureScreen({super.key});
@@ -26,17 +23,15 @@ class _CaptureScreenState extends State<CaptureScreen>
     with WidgetsBindingObserver {
   CameraController? controller;
   bool _isCameraInitialized = false;
-  XFile? _capturedPhoto;
-  Position? _currentPosition;
-  bool _isLoadingLocation = false;
+  CroppedFile? _capturedPhoto;
   FlashMode _currentFlashMode = FlashMode.off;
   Offset? _focusPoint;
   bool _isCapturing = false;
+  bool _isProcessingData = false;
   double _minZoomLevel = 1.0;
   double _maxZoomLevel = 1.0;
   double _currentZoomLevel = 1.0;
   double _baseZoomLevel = 1.0;
-  String? _mapImageUrl;
 
   void _handleScaleStart(ScaleStartDetails details) {
     _baseZoomLevel = _currentZoomLevel;
@@ -110,93 +105,7 @@ class _CaptureScreenState extends State<CaptureScreen>
     });
   }
 
-  void _resetCapture() {
-    setState(() {
-      _capturedPhoto = null;
-      _currentPosition = null;
-      _mapImageUrl = null;
-      _isLoadingLocation = false;
-      _isCapturing = false;
-    });
-  }
-
-  void _handlePopInvoked(bool didPop, dynamic result) {
-    // Argument 'result' akan berisi detail tambahan tentang pop/exit,
-    // namun kita hanya perlu argumen 'didPop'.
-
-    if (didPop) return; // Jika pop sudah terjadi, keluar.
-
-    // Jika Pop dicegah atau belum terjadi:
-    if (_capturedPhoto != null) {
-      // STATE 2: Foto ada. Kita cegah pop dan reset.
-      _resetCapture();
-      // Di PopScope, kita tidak perlu memanggil pop lagi.
-    } else {
-      // STATE 1: Live camera (Root). Kita ingin keluar aplikasi.
-      // Panggil pop secara manual untuk melanjutkan aksi pop/exit.
-      context.go(AppRoutes.home);
-    }
-  }
-
-  Future<void> _navigateToResultsAndReset() async {
-    if (_capturedPhoto == null || _currentPosition == null || !mounted) return;
-
-    //! pakai File Path dari asset untuk testing
-    // final String assetFilePath = await getFilePathFromAsset(
-    //   staticTestAssetPath,
-    // );
-
-    // 1. Dapatkan file asli
-    final File originalFile = File(_capturedPhoto!.path);
-
-    // 2. Salin file ke cache
-    final File safeFileToUpload;
-    try {
-      safeFileToUpload = await copyFileToCache(originalFile);
-    } catch (e) {
-      if (mounted) {
-        // Gagal menyalin file (kemungkinan file asli sudah corrupt/lock)
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Gagal menyiapkan foto untuk diunggah: $e")),
-        );
-      }
-      _resetCapture();
-      return;
-    }
-
-    // 3. Cek mounted lagi
-    if (!mounted) {
-      return;
-    }
-
-    // 4. Lakukan Navigasi dan TUNGGU hasilnya
-    await context.pushNamed(
-      AppRoutes.results,
-      extra: {
-        // 'imagePath': assetFilePath,
-        'imagePath': safeFileToUpload.path,
-        'latitude': _currentPosition!.latitude,
-        'longitude': _currentPosition!.longitude,
-      },
-    );
-
-    // 5. Reset state lokal saat kembali (ini juga bisa membersihkan file salinan)
-    _resetCapture();
-  }
-
   Future<void> _initCameraAndPermissions() async {
-    // 1. Request izin kamera dan lokasi
-    final allowed = await PermissionService.requestCameraAndLocation();
-    if (!allowed) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Izin kamera & lokasi diperlukan")),
-        );
-      }
-      return;
-    }
-
-    // 2. Setup kamera
     final cameras = await availableCameras();
 
     if (!mounted) {
@@ -229,7 +138,7 @@ class _CaptureScreenState extends State<CaptureScreen>
       _minZoomLevel = await controller!.getMinZoomLevel();
       _maxZoomLevel = await controller!.getMaxZoomLevel();
 
-      if (context.mounted) {
+      if (mounted) {
         setState(() => _isCameraInitialized = true);
       }
     } on CameraException catch (e) {
@@ -271,7 +180,8 @@ class _CaptureScreenState extends State<CaptureScreen>
       }
       Geolocator.openLocationSettings();
       setState(() {
-        _isCapturing = false; // Reset agar tombol tidak terkunci
+        _isCapturing = false;
+        _isProcessingData = false;
       });
       return;
     }
@@ -279,17 +189,16 @@ class _CaptureScreenState extends State<CaptureScreen>
     //*  ----------------------------------------------------------------
     //* LOGIC AMBIL FOTO, CROP, DAN GPS
     //* -----------------------------------------------------------------
-    XFile? finalCroppedFile;
+    CroppedFile? croppedFile;
     Position? position;
 
     try {
       // 1. Ambil foto
       final XFile capturedFile = await controller!.takePicture();
 
-      // 2. Panggil Cropper Screen
-      final CroppedFile? croppedFile = await ImageCropper().cropImage(
+      croppedFile = await ImageCropper().cropImage(
         sourcePath: capturedFile.path,
-        compressQuality: 70, // Kompresi 70% untuk mengurangi ukuran payload
+        compressQuality: 70,
         uiSettings: [
           AndroidUiSettings(
             toolbarTitle: 'Edit Foto',
@@ -304,68 +213,72 @@ class _CaptureScreenState extends State<CaptureScreen>
         // cropStyle: CropStyle.rectangle,
       );
 
-      // 3. Jika pengguna membatalkan cropping, hentikan proses
       if (croppedFile == null) {
+        setState(() {
+          _isCapturing = false;
+          _isProcessingData = false;
+        });
         return;
       }
 
-      // 4. Update data lokal dengan file cropped
-      finalCroppedFile = XFile(croppedFile.path);
-
-      // 5. Mulai loading GPS (Status ini hanya relevan jika kita punya indicator loading global)
       setState(() {
-        _capturedPhoto = finalCroppedFile;
-        _isLoadingLocation = true;
+        _isProcessingData = true; // Overlay Aktif: Mulai proses GPS dan I/O
       });
 
-      // 6. Ambil lokasi GPS
       position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       ).timeout(const Duration(seconds: 10)); // Timeout setelah 10 detik
 
-      // 🟢 KOREKSI INTI: Panggil MapService dari locator
-      final mapService = locator<MapService>();
-      final mapUrl = mapService.generateStaticMapUrl(
-        lat: position.latitude,
-        long: position.longitude,
-      );
+      if (mounted) {
+        // a. Deep Copy File (Ambil path dari CroppedFile yang sudah di-crop)
+        final File originalCroppedFile = File(croppedFile.path);
+        final File safeFileToUpload = await copyFileToCache(
+          originalCroppedFile,
+        );
 
-      // 7. Update state dengan file BARU yang sudah di-crop
-      setState(() {
-        _mapImageUrl = mapUrl;
-        _currentPosition = position;
-        _isLoadingLocation = false; // Mulai loading lokasi
-      });
+        if (!mounted) {
+          return;
+        }
+
+        // b. Navigasi dan Submit
+        await context.pushNamed(
+          AppRoutes.results,
+          extra: {
+            'imagePath': safeFileToUpload.path,
+            'latitude': position.latitude,
+            'longitude': position.longitude,
+          },
+        );
+
+        return;
+      }
     } on TimeoutException {
-      // 💡 TANGANI ERROR KHUSUS TIMEOUT
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text("Gagal mendapatkan lokasi GPS: Waktu habisf"),
+            content: Text("Gagal mendapatkan lokasi GPS: Waktu habis."),
           ),
         );
       }
-      setState(() => _isLoadingLocation = false);
-      // Karena lokasi gagal, kita harus membiarkan _capturedPhoto di-reset
-      _resetCapture();
     } on CameraException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Gagal mengambil foto: ${e.description}")),
         );
       }
-      setState(() => _isLoadingLocation = false); // Hentikan loading jika gagal
     } on PlatformException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Gagal mendapatkan lokasi: ${e.message}")),
         );
       }
-      setState(() => _isLoadingLocation = false); // Hentikan loading jika gagal
     } finally {
-      setState(() {
-        _isCapturing = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isCapturing = false;
+          _isProcessingData = false;
+        });
+      }
     }
   }
 
@@ -427,331 +340,135 @@ class _CaptureScreenState extends State<CaptureScreen>
       );
     }
 
-    // Tampilan setelah foto diambil
-    if (_capturedPhoto != null) {
-      return PopScope(
-        // 💡 Mencegat Tombol Fisik BACK (Android) saat Preview
-        canPop: false,
-        onPopInvokedWithResult: _handlePopInvoked,
+    // Tampilan Kamera Live
+    return AnimatedOpacity(
+      // Masking Transisi Glitch
+      opacity: _isCameraInitialized ? 1.0 : 0.0,
+      duration: const Duration(milliseconds: 400),
+      child: PopScope(
+        canPop: true,
         child: Scaffold(
-          backgroundColor:
-              Colors.grey[100], // Background lebih terang untuk hasil
-          body: Stack(
-            children: [
-              // Gambar yang diambil di bagian atas
-              Positioned.fill(
-                child: Image.file(
-                  File(_capturedPhoto!.path),
-                  fit: BoxFit.cover,
-                ),
-              ),
-              // Header untuk tombol kembali dan settings
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                child: AppBar(
-                  backgroundColor: Colors.transparent,
-                  elevation: 0,
-                  leading: IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Colors.white),
-                    onPressed: _resetCapture, // Kembali ke mode kamera
+          backgroundColor: Colors.black,
+          // 💡 KOREKSI: Tambahkan ColoredBox untuk masking yang lebih baik
+          body: ColoredBox(
+            color: Colors.black,
+            child: Stack(
+              children: [
+                // 2a. Camera Preview (dengan Glitch Fix dan Gesture)
+                Positioned.fill(
+                  child: GestureDetector(
+                    onTapDown: _handleTapToFocus,
+                    onScaleStart: _handleScaleStart,
+                    onScaleUpdate: _handleScaleUpdate,
+                    child: ClipRRect(
+                      // Wajib untuk membersihkan tepi
+                      child: CameraPreview(
+                        controller!,
+                      ), // Gunakan CameraPreview yang paling sederhana
+                    ),
                   ),
-                  actions: [
-                    IconButton(
-                      icon: const Icon(Icons.settings, color: Colors.white),
-                      onPressed: () {
-                        /* Handle settings */
-                      },
-                    ),
-                  ],
                 ),
-              ),
-              // Konten bawah dengan info lokasi
-              Align(
-                alignment: Alignment.bottomCenter,
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(24.0),
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(24),
-                      topRight: Radius.circular(24),
+
+                // 2b. AppBar/Header
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: AppBar(
+                    backgroundColor: Colors.transparent,
+                    elevation: 0,
+                    leading: IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.white),
+                      onPressed: () =>
+                          Navigator.of(context).pop(), // Kembali ke HomePage
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black12,
-                        blurRadius: 10,
-                        spreadRadius: 5,
+                    actions: [
+                      IconButton(
+                        icon: Icon(
+                          _getFlashIcon(_currentFlashMode),
+                          color: Colors.white,
+                        ),
+                        onPressed: _toggleFlashMode,
                       ),
                     ],
                   ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(Icons.location_on, color: Colors.blue),
-                          const SizedBox(width: 8),
-                          Text(
-                            _currentPosition != null
-                                ? "Lokasi GPS Terdeteksi"
-                                : "Mencari Lokasi GPS...",
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
+                ),
+                //* ===================================
+                //*  Shutter Button di tengah bawah
+                //* ===================================
+                Positioned(
+                  bottom: 40,
+                  left: 0,
+                  right: 0,
+                  child: Center(
+                    child: IconButton(
+                      iconSize: 80,
+                      color: Colors.white,
+                      onPressed:
+                          _capturePhotoAndLocation, // Ambil foto dan lokasi
+                      icon: Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 6),
+                          color: Colors.white.withValues(
+                            alpha: 0.2,
+                          ), // Sedikit transparan
+                        ),
+                        child: const Icon(
+                          Icons.camera_alt,
+                          size: 40,
+                        ), // Ikon kamera di dalam
                       ),
-                      const SizedBox(height: 16),
-                      // Tampilan Peta
-                      _isLoadingLocation
-                          ? const Center(child: CircularProgressIndicator())
-                          : _currentPosition != null
-                          ? Container(
-                              height: 150,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.grey[300]!),
-                              ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(12),
-                                child: _mapImageUrl != null
-                                    ? Image.network(
-                                        // 🟢 KOREKSI: Gunakan Image.network
-                                        _mapImageUrl!,
-                                        fit: BoxFit.cover,
-                                        // Tambahkan placeholder/loading saat gambar diunduh
-                                        loadingBuilder:
-                                            (context, child, loadingProgress) {
-                                              if (loadingProgress == null) {
-                                                return child;
-                                              }
-                                              return const Center(
-                                                child:
-                                                    CircularProgressIndicator(),
-                                              );
-                                            },
-                                        errorBuilder:
-                                            (context, error, stackTrace) {
-                                              return const Center(
-                                                child: Text(
-                                                  "Gagal memuat peta.",
-                                                  style: TextStyle(
-                                                    color: Colors.red,
-                                                  ),
-                                                ),
-                                              );
-                                            },
-                                      )
-                                    : const Center(
-                                        child: Text("Memuat Peta..."),
-                                      ), // Fallback jika URL null
-                              ),
-                            )
-                          : Container(
-                              height: 150,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(12),
-                                color: Colors.grey[200],
-                              ),
-                              child: const Center(
-                                child: Text(
-                                  "Gagal mendapatkan lokasi.",
-                                  style: TextStyle(color: Colors.grey),
-                                ),
+                    ),
+                  ),
+                ),
+
+                if (_isProcessingData)
+                  const Positioned.fill(
+                    child: ColoredBox(
+                      // 🟢 KOREKSI: Gunakan warna Putih dengan Opacity minimal 80% untuk masking total
+                      color: Colors.white,
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            CircularProgressIndicator(), // Loading utama
+                            SizedBox(height: 16),
+                            Text(
+                              "Memproses dan Mengunggah Data...",
+                              style: TextStyle(
+                                color: Colors.black54,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
-                      const SizedBox(height: 16),
-                      // Koordinat
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          _buildLocationInfo(
-                            Icons.location_pin,
-                            "Lat: ${_currentPosition?.latitude.toStringAsFixed(4) ?? '-'}",
-                          ),
-                          _buildLocationInfo(
-                            Icons.location_searching,
-                            "Long: ${_currentPosition?.longitude.toStringAsFixed(4) ?? '-'}",
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-                      // Tombol "Cek Reklame Terdekat"
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue[700],
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          onPressed:
-                              _currentPosition != null &&
-                                  _capturedPhoto != null &&
-                                  !_isLoadingLocation
-                              ? _navigateToResultsAndReset
-                              : null, // Disable jika lokasi/foto belum siap
-                          child: Text(
-                            _isLoadingLocation
-                                ? "Mencari Lokasi..."
-                                : "Submit Laporan Reklame",
-                            style: const TextStyle(
-                              fontSize: 18,
-                              color: Colors.white,
-                            ),
-                          ),
+                          ],
                         ),
                       ),
-                    ],
+                    ),
                   ),
-                ),
-              ),
-            ],
+
+                if (_focusPoint != null)
+                  Positioned(
+                    // Posisi top/left dihitung dari _focusPoint yang disimpan di State
+                    // Dikurangi 20 untuk memposisikan kotak 40x40 tepat di tengah tap (40/2 = 20)
+                    top: _focusPoint!.dy - 20,
+                    left: _focusPoint!.dx - 20,
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.yellow, width: 2),
+                        borderRadius: BorderRadius.circular(5),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
-      );
-    }
-
-    // Tampilan Kamera Live
-    return PopScope(
-      canPop: true,
-      onPopInvokedWithResult: _handlePopInvoked,
-      child: Scaffold(
-        backgroundColor: Colors.black,
-        body: Stack(
-          children: [
-            // CAMERA PREVIEW
-            Positioned.fill(
-              child: GestureDetector(
-                onTapDown: _handleTapToFocus,
-                onScaleStart: _handleScaleStart,
-                onScaleUpdate: _handleScaleUpdate,
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    // Ambil dimensi dari ruang yang tersedia
-                    final screenWidth = constraints.maxWidth;
-                    // final screenHeight = constraints.maxHeight;
-
-                    // Rasio Preview yang HARUS BENAR: 0.75 (1 / 1.333)
-                    final cameraRatio = 1 / controller!.value.aspectRatio;
-
-                    // Hitung Tinggi Preview yang DIBUTUHKAN untuk rasio 0.75
-                    // agar memenuhi Lebar Layar (Screen Width / 0.75)
-                    final requiredPreviewHeight = screenWidth / cameraRatio;
-
-                    // Gunakan FittedBox untuk memaksa preview FILL layar
-                    return SizedBox.expand(
-                      child: FittedBox(
-                        fit: BoxFit
-                            .cover, // Wajib COVER untuk menghilangkan distorsi
-                        child: SizedBox(
-                          // Ukuran yang dipaksakan (width = lebar layar, height = yang dibutuhkan
-                          // untuk mempertahankan rasio 0.75)
-                          width: screenWidth,
-                          height: requiredPreviewHeight,
-                          child: CameraPreview(controller!),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ),
-
-            if (_focusPoint != null)
-              Positioned(
-                top: _focusPoint!.dy - 20, // Koreksi posisi tengah
-                left: _focusPoint!.dx - 20, // Koreksi posisi tengah
-                child: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.yellow, width: 2),
-                    borderRadius: BorderRadius.circular(5),
-                  ),
-                ),
-              ),
-
-            // Header untuk tombol kembali dan settings
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: AppBar(
-                backgroundColor: Colors.transparent,
-                elevation: 0,
-                leading: IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.white),
-                  onPressed: () => context.go(AppRoutes.home),
-                ),
-                actions: [
-                  IconButton(
-                    icon: Icon(
-                      _getFlashIcon(
-                        _currentFlashMode,
-                      ), // Menggunakan fungsi helper
-                      color: Colors.white,
-                    ),
-                    onPressed: _toggleFlashMode, // Memanggil fungsi toggle
-                  ),
-                  // IconButton(
-                  //   icon: const Icon(Icons.settings, color: Colors.white),
-                  //   onPressed: () {
-                  //     /* Handle settings */
-                  //   },
-                  // ),
-                ],
-              ),
-            ),
-
-            // Shutter Button di tengah bawah
-            Positioned(
-              bottom: 40,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: IconButton(
-                  iconSize: 80,
-                  color: Colors.white,
-                  onPressed: _capturePhotoAndLocation, // Ambil foto dan lokasi
-                  icon: Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 6),
-                      color: Colors.white.withValues(
-                        alpha: 0.2,
-                      ), // Sedikit transparan
-                    ),
-                    child: const Icon(
-                      Icons.camera_alt,
-                      size: 40,
-                    ), // Ikon kamera di dalam
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
       ),
-    );
-  }
-
-  Widget _buildLocationInfo(IconData icon, String text) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, color: Colors.blue, size: 20),
-        const SizedBox(width: 4),
-        Text(text, style: const TextStyle(fontSize: 16)),
-      ],
     );
   }
 }
