@@ -14,7 +14,7 @@ class CheckBillboardUseCase {
     required double longitude,
   }) async {
     // Di sini kita bisa menambahkan logika bisnis seperti validasi jarak/rate limit, dll.
-    return await repository.checkBillboardByPhoto(
+    return await repository.checkReklameWithCoordinate(
       imagePath: imagePath,
       latitude: latitude,
       longitude: longitude,

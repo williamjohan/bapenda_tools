@@ -43,4 +43,46 @@ class BillboardRemoteDataSource {
       throw Exception("Failed to check reklame via API: ${e.message}");
     }
   }
+
+  Future<List<BillboardModel>> checkReklameWithCoordinate({
+    required String imagePath,
+    required double latitude,
+    required double longitude,
+  }) async {
+    // 1. Buat URL dengan Query Parameters
+    final endpoint =
+        '$baseUrl/ReklameChecker/CheckReklameKoordinat'
+        '?latitude=$latitude&longitude=$longitude';
+
+    // 2. Siapkan File (MultipartFile)
+    final fileName = imagePath.split('/').last;
+    final file = await MultipartFile.fromFile(
+      imagePath,
+      filename: fileName,
+      contentType: MediaType('image', 'png'),
+    );
+
+    // 3. Siapkan FormData (Kunci 'File')
+    final formData = FormData.fromMap({'File': file});
+
+    try {
+      final response = await dio.post(
+        endpoint, // URL sekarang sudah lengkap dengan lat/lon
+        data: formData,
+        options: Options(headers: {'accept': '*/*'}),
+      );
+
+      // ... (Logika parsing response 200) ...
+      if (response.statusCode == 200) {
+        final List<dynamic> jsonList = response.data as List<dynamic>;
+        return jsonList.map((json) => BillboardModel.fromJson(json)).toList();
+      } else {
+        throw Exception(
+          "API returned status code ${response.statusCode}: ${response.statusMessage}",
+        );
+      }
+    } on DioException catch (e) {
+      throw Exception("Failed to check reklame via API: ${e.message}");
+    }
+  }
 }

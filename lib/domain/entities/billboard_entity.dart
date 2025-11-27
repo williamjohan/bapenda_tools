@@ -20,7 +20,8 @@ class BillboardEntity extends Equatable {
   final String imageUrl; // Base64 string yang sudah di-format sebagai data URL
   final double latitude; // Default 0.0 (Akan diisi nanti)
   final double longitude; // Default 0.0 (Akan diisi nanti)
-  final double distanceKm; // Default 0.0 (Akan diisi nanti)
+  final double distance; // Default 0.0 (Akan diisi nanti)
+  final double score; // Default 0.0 (Akan diisi nanti)
 
   const BillboardEntity({
     required this.id,
@@ -35,8 +36,9 @@ class BillboardEntity extends Equatable {
     required this.imageUrl,
     required this.latitude,
     required this.longitude,
-    required this.distanceKm,
+    required this.distance,
     required this.status,
+    required this.score,
   });
 
   @override
@@ -53,7 +55,8 @@ class BillboardEntity extends Equatable {
     imageUrl,
     latitude,
     longitude,
-    distanceKm,
+    distance,
     status,
+    score,
   ];
 }

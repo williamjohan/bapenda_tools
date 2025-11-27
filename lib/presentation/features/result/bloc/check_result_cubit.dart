@@ -26,13 +26,47 @@ class CheckResultCubit extends Cubit<CheckResultState> {
     } catch (e) {
       String errorMessage = "Gagal mengambil data. Silakan coba lagi.";
 
-      // Penanganan error yang lebih spesifik
       if (e is DioException) {
-        errorMessage = "Kesalahan koneksi: ${e.message}";
+        // 🟢 KOREKSI: Pecah DioException berdasarkan Tipe
+        switch (e.type) {
+          case DioExceptionType.connectionTimeout:
+          case DioExceptionType.sendTimeout:
+          case DioExceptionType.receiveTimeout:
+            errorMessage = "Kesalahan Koneksi: Waktu koneksi habis (Timeout).";
+            break;
+
+          case DioExceptionType.badResponse:
+            // 💡 Server merespons (misalnya 404, 500)
+            final statusCode = e.response?.statusCode ?? 0;
+            final statusMsg =
+                e.response?.statusMessage ?? "Unknown Server Error";
+
+            if (statusCode >= 500) {
+              errorMessage =
+                  "Server Error ($statusCode): Server sedang bermasalah.";
+            } else if (statusCode >= 400) {
+              errorMessage =
+                  "Request Gagal ($statusCode): Format data salah atau tidak ditemukan.";
+            } else {
+              errorMessage = "Respon Buruk: $statusMsg";
+            }
+            break;
+
+          case DioExceptionType.connectionError:
+            errorMessage =
+                "Kesalahan Jaringan: Tidak ada koneksi internet atau server tidak terjangkau.";
+            break;
+
+          case DioExceptionType.unknown:
+          default:
+            errorMessage =
+                "Kesalahan Tidak Diketahui: Coba periksa alamat API. Detail: ${e.message}";
+        }
       } else {
+        // Penanganan error non-Dio (misalnya, Exception dari Domain/Repository Layer)
         errorMessage = e.toString().contains("Failed to check reklame")
-            ? "API Error: Gagal mengunggah foto."
-            : e.toString();
+            ? "Error I/O File: Gagal membaca/mengunggah foto." // Jika error dari remote_datasource
+            : "Kesalahan Aplikasi Umum: ${e.toString()}";
       }
 
       emit(CheckResultError(errorMessage));

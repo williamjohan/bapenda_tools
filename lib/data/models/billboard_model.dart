@@ -12,6 +12,10 @@ class BillboardModel {
   final String isiReklame;
   final String thumbnail; // Base64 String
   final String status;
+  final double score;
+  final double jarak;
+  final double latitude;
+  final double longitude;
 
   const BillboardModel({
     required this.noFormulir,
@@ -23,6 +27,10 @@ class BillboardModel {
     required this.isiReklame,
     required this.thumbnail,
     required this.status,
+    required this.score,
+    required this.jarak,
+    required this.latitude,
+    required this.longitude,
   });
 
   // Factory untuk memetakan dari JSON
@@ -38,6 +46,10 @@ class BillboardModel {
       isiReklame: json['isiReklame'] as String? ?? '',
       thumbnail: json['thumbnail'] as String? ?? '',
       status: json['status'] as String? ?? 'Unknown',
+      score: (json['score'] as num?)?.toDouble() ?? 0.0,
+      jarak: (json['jarak'] as num?)?.toDouble() ?? 0.0,
+      latitude: (json['latitude'] as num?)?.toDouble() ?? 0.0,
+      longitude: (json['longitude'] as num?)?.toDouble() ?? 0.0,
     );
   }
 
@@ -62,9 +74,10 @@ class BillboardModel {
       startDate: startDate,
       endDate: endDate,
       imageUrl: imageUrlData,
-      latitude: 0.0,
-      longitude: 0.0,
-      distanceKm: 0.0,
+      latitude: latitude,
+      longitude: longitude,
+      distance: jarak,
+      score: score,
       status: status,
     );
   }

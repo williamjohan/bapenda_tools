@@ -55,4 +55,18 @@ class BillboardRepositoryImpl implements BillboardRepository {
     // return mockModels.map((model) => model.toEntity()).toList();.
     return billboardModels.map((model) => model.toEntity()).toList();
   }
+
+  @override
+  Future<List<BillboardEntity>> checkReklameWithCoordinate({
+    required String imagePath,
+    required double latitude,
+    required double longitude,
+  }) async {
+    final billboardModels = await remoteDataSource.checkReklameWithCoordinate(
+      imagePath: imagePath,
+      latitude: latitude,
+      longitude: longitude,
+    );
+    return billboardModels.map((model) => model.toEntity()).toList();
+  }
 }
