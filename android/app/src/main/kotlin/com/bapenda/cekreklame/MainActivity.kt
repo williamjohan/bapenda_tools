@@ -1,4 +1,4 @@
-package com.example.cekreklamemobile
+package com.bapenda.cekreklame
 
 import io.flutter.embedding.android.FlutterActivity
 
