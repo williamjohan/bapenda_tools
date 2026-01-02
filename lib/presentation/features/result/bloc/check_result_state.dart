@@ -6,7 +6,7 @@ abstract class CheckResultState extends Equatable {
   const CheckResultState();
 
   @override
-  List<Object> get props => [];
+  List<Object?> get props => [];
 }
 
 class CheckResultInitial extends CheckResultState {}
@@ -19,7 +19,7 @@ class CheckResultLoaded extends CheckResultState {
   const CheckResultLoaded(this.results);
 
   @override
-  List<Object> get props => [results];
+  List<Object?> get props => [results];
 }
 
 class CheckResultError extends CheckResultState {
@@ -28,5 +28,23 @@ class CheckResultError extends CheckResultState {
   const CheckResultError(this.message);
 
   @override
-  List<Object> get props => [message];
+  List<Object?> get props => [message];
+}
+
+class CheckResultReporting extends CheckResultState {}
+
+class CheckResultReportSuccess extends CheckResultState {
+  final String message;
+  CheckResultReportSuccess(this.message);
+
+  @override
+  List<Object?> get props => [message];
+}
+
+class CheckResultReportError extends CheckResultState {
+  final String message;
+  CheckResultReportError(this.message);
+
+  @override
+  List<Object?> get props => [message];
 }

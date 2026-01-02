@@ -1,5 +1,6 @@
 // lib/di.dart
 import 'package:cekreklamemobile/core/services/map_service.dart';
+import 'package:cekreklamemobile/domain/usecases/post_report_usecase.dart';
 import 'package:cekreklamemobile/presentation/features/result/bloc/check_result_cubit.dart';
 import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
@@ -29,12 +30,19 @@ void setupLocator() {
   // --- Use Case Layer ---
   // 3. Use Case (butuh Repository)
   locator.registerLazySingleton<CheckBillboardUseCase>(
-    () => CheckBillboardUseCase(locator()), // Injeksi BillboardRepository
+    () => CheckBillboardUseCase(locator()),
+  );
+
+  locator.registerLazySingleton<PostReportUsecase>(
+    () => PostReportUsecase(locator<BillboardRepository>()),
   );
 
   // --- 4 Presentation Layer ---
   locator.registerFactory<CheckResultCubit>(
-    () => CheckResultCubit(locator<CheckBillboardUseCase>()),
+    () => CheckResultCubit(
+      locator<CheckBillboardUseCase>(),
+      locator<PostReportUsecase>(),
+    ),
   );
 
   // --- 5 Core Services ---

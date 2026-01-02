@@ -12,4 +12,10 @@ abstract class BillboardRepository {
     required double latitude,
     required double longitude,
   });
+
+  Future<bool> reportBillboard({
+    required String imagePath,
+    required double latitude,
+    required double longitude,
+  });
 }

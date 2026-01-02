@@ -459,7 +459,6 @@ class _CaptureScreenState extends State<CaptureScreen>
                 if (_isProcessingData)
                   const Positioned.fill(
                     child: ColoredBox(
-                      // 🟢 KOREKSI: Gunakan warna Putih dengan Opacity minimal 80% untuk masking total
                       color: Colors.white,
                       child: Center(
                         child: Column(
@@ -468,7 +467,7 @@ class _CaptureScreenState extends State<CaptureScreen>
                             CircularProgressIndicator(), // Loading utama
                             SizedBox(height: 16),
                             Text(
-                              "Memproses dan Mengunggah Data...",
+                              "Memproses dan Mengirim Data...",
                               style: TextStyle(
                                 color: Colors.black54,
                                 fontWeight: FontWeight.w500,

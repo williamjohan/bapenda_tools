@@ -38,7 +38,6 @@ class BillboardRepositoryImpl implements BillboardRepository {
   final BillboardRemoteDataSource remoteDataSource;
   BillboardRepositoryImpl(this.remoteDataSource);
 
-  // Implementasi untuk Check by Photo
   @override
   Future<List<BillboardEntity>> checkBillboardByPhoto({
     required String imagePath,
@@ -68,5 +67,18 @@ class BillboardRepositoryImpl implements BillboardRepository {
       longitude: longitude,
     );
     return billboardModels.map((model) => model.toEntity()).toList();
+  }
+
+  @override
+  Future<bool> reportBillboard({
+    required String imagePath,
+    required double latitude,
+    required double longitude,
+  }) async {
+    return await remoteDataSource.postReport(
+      imagePath: imagePath,
+      latitude: latitude,
+      longitude: longitude,
+    );
   }
 }

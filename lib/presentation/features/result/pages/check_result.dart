@@ -29,7 +29,11 @@ class CheckResultScreen extends StatelessWidget {
         );
         return cubit;
       },
-      child: CheckResultView(imagePath: imagePath),
+      child: CheckResultView(
+        imagePath: imagePath,
+        latitude: latitude,
+        longitude: longitude,
+      ),
     );
   }
 }

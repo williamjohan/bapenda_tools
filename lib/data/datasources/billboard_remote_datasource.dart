@@ -85,4 +85,45 @@ class BillboardRemoteDataSource {
       throw Exception("Failed to check reklame via API: ${e.message}");
     }
   }
+
+  Future<bool> postReport({
+    required String imagePath,
+    required double latitude,
+    required double longitude,
+  }) async {
+    const endpoint = '$baseUrl/ReklameChecker/LaporReklameIllegal';
+
+    // Siapkan File (MultipartFile)
+    final fileName = imagePath.split('/').last;
+    final file = await MultipartFile.fromFile(
+      imagePath,
+      filename: fileName,
+      contentType: MediaType('image', 'png'),
+    );
+
+    // Siapkan FormData dengan tambahan latitude dan longitude
+    final formData = FormData.fromMap({
+      'File': file,
+      'latitude': latitude,
+      'longitude': longitude,
+    });
+
+    try {
+      final response = await dio.post(
+        endpoint,
+        data: formData,
+        options: Options(headers: {'accept': '*/*'}),
+      );
+
+      if (response.statusCode == 200) {
+        return true; // Laporan berhasil dikirim
+      } else {
+        throw Exception(
+          "API returned status code ${response.statusCode}: ${response.statusMessage}",
+        );
+      }
+    } on DioException catch (e) {
+      throw Exception("Gagal Mengirim Laporan: ${e.message}");
+    }
+  }
 }
