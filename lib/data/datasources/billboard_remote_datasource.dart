@@ -90,40 +90,37 @@ class BillboardRemoteDataSource {
     required String imagePath,
     required double latitude,
     required double longitude,
+    required int type,
   }) async {
-    const endpoint = '$baseUrl/ReklameChecker/LaporReklameIllegal';
-
-    // Siapkan File (MultipartFile)
-    final fileName = imagePath.split('/').last;
-    final file = await MultipartFile.fromFile(
-      imagePath,
-      filename: fileName,
-      contentType: MediaType('image', 'png'),
-    );
-
-    // Siapkan FormData dengan tambahan latitude dan longitude
-    final formData = FormData.fromMap({
-      'File': file,
-      'latitude': latitude,
-      'longitude': longitude,
-    });
+    final endpoint =
+        '$baseUrl/ReklameChecker/LaporReklameIlegal'
+        '?latitude=$latitude&longitude=$longitude&jenis=$type';
 
     try {
+      // 2. Siapkan Body (Hanya File)
+      final formData = FormData.fromMap({
+        'File': await MultipartFile.fromFile(
+          imagePath,
+          filename: imagePath.split('/').last,
+          contentType: MediaType('image', 'png'),
+        ),
+      });
+
+      // 3. Kirim dengan Header Accept
       final response = await dio.post(
         endpoint,
         data: formData,
-        options: Options(headers: {'accept': '*/*'}),
+        options: Options(
+          headers: {'accept': '*/*'},
+          contentType: 'multipart/form-data',
+        ),
       );
 
-      if (response.statusCode == 200) {
-        return true; // Laporan berhasil dikirim
-      } else {
-        throw Exception(
-          "API returned status code ${response.statusCode}: ${response.statusMessage}",
-        );
-      }
-    } on DioException catch (e) {
-      throw Exception("Gagal Mengirim Laporan: ${e.message}");
+      return response.statusCode == 200;
+    } on DioException {
+      rethrow;
+    } catch (e) {
+      throw Exception("System Error: $e");
     }
   }
 }

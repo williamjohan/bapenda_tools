@@ -115,6 +115,7 @@ class NoResultsWidget extends StatelessWidget {
                     imagePath: capturedImagePath,
                     latitude: latitude,
                     longitude: longitude,
+                    type: ReportType.ilegal.value,
                   );
                 },
                 icon: const Icon(Icons.campaign, color: Colors.white),

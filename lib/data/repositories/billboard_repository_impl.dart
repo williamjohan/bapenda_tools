@@ -74,11 +74,13 @@ class BillboardRepositoryImpl implements BillboardRepository {
     required String imagePath,
     required double latitude,
     required double longitude,
+    required int type,
   }) async {
     return await remoteDataSource.postReport(
       imagePath: imagePath,
       latitude: latitude,
       longitude: longitude,
+      type: type,
     );
   }
 }

@@ -115,6 +115,8 @@ class CheckResultView extends StatelessWidget {
                   return ResultsListViewWidget(
                     data: state.results,
                     capturedImagePath: imagePath,
+                    latitude: latitude,
+                    longitude: longitude,
                   );
                 }
                 return const SizedBox.shrink();

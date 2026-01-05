@@ -17,5 +17,6 @@ abstract class BillboardRepository {
     required String imagePath,
     required double latitude,
     required double longitude,
+    required int type,
   });
 }

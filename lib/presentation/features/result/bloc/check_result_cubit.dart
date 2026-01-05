@@ -2,6 +2,7 @@
 import 'package:cekreklamemobile/core/errors/failures.dart';
 import 'package:cekreklamemobile/domain/usecases/check_billboard_usecase.dart';
 import 'package:cekreklamemobile/domain/usecases/post_report_usecase.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:dio/dio.dart';
 import 'check_result_state.dart';
@@ -19,6 +20,9 @@ class CheckResultCubit extends Cubit<CheckResultState> {
     required double longitude,
   }) async {
     emit(CheckResultLoading());
+
+    await Future.delayed(const Duration(milliseconds: 500));
+
     try {
       final results = await checkBillboard.call(
         imagePath: imagePath,
@@ -36,6 +40,7 @@ class CheckResultCubit extends Cubit<CheckResultState> {
     required String imagePath,
     required double latitude,
     required double longitude,
+    required int type,
   }) async {
     emit(CheckResultReporting()); // Tampilkan loading khusus lapor
 
@@ -45,6 +50,7 @@ class CheckResultCubit extends Cubit<CheckResultState> {
         imagePath: imagePath,
         latitude: latitude,
         longitude: longitude,
+        type: type,
       );
 
       if (isSuccess) {
@@ -78,6 +84,8 @@ class CheckResultCubit extends Cubit<CheckResultState> {
           return FailureMessages.noInternet;
 
         default:
+          debugPrint("Dio Error Detail: ${e.message}");
+          debugPrint("Dio Error Type: ${e.type}");
           return FailureMessages.unknownError;
       }
     }

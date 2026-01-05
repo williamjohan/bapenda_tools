@@ -1,14 +1,27 @@
 import 'dart:typed_data';
+import 'package:cekreklamemobile/core/constants/app_constants.dart';
 import 'package:cekreklamemobile/domain/value_objects/billboard_status.dart';
 import 'package:cekreklamemobile/domain/entities/billboard_entity.dart';
+import 'package:cekreklamemobile/presentation/features/result/bloc/check_result_cubit.dart';
 import 'package:cekreklamemobile/presentation/features/result/widgets/image_preview_page.dart';
+import 'package:cekreklamemobile/presentation/shared/widgets/custom_modal_widget.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/utils/image_utils.dart';
 
 class ResultCardWidget extends StatelessWidget {
   final BillboardEntity billboard;
+  final String capturedImagePath;
+  final double latitude;
+  final double longitude;
 
-  const ResultCardWidget({super.key, required this.billboard});
+  const ResultCardWidget({
+    super.key,
+    required this.billboard,
+    required this.capturedImagePath,
+    required this.latitude,
+    required this.longitude,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -21,10 +34,10 @@ class ResultCardWidget extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       child: InkWell(
-        // onTap: () {
-        //   // Navigasi ke Detail Page dengan membawa Entity
-        //   context.pushNamed(AppRoutes.detail, extra: billboard);
-        // },
+        onTap: () {
+          // Navigasi ke Detail Page dengan membawa Entity
+          // context.pushNamed(AppRoutes.detail, extra: billboard);
+        },
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
@@ -153,7 +166,7 @@ class ResultCardWidget extends StatelessWidget {
                     //     ),
                     //     const SizedBox(width: 4),
                     //     Text(
-                    //       "Approx. ${billboard.distanceKm.toStringAsFixed(2)}km away",
+                    //       "Approx. ${billboard.distance.toStringAsFixed(2)}km away",
                     //       style: TextStyle(color: Colors.grey[600]),
                     //     ),
                     //   ],
@@ -162,6 +175,98 @@ class ResultCardWidget extends StatelessWidget {
                 ),
               ),
               // const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+
+              //buat icon untuk lapor
+              if (billboard.isExpired)
+                IconButton(
+                  onPressed: () {
+                    showAppModal(
+                      context: context,
+                      content: Column(
+                        children: [
+                          SizedBox(height: 10),
+                          Text(
+                            "Apakah Anda yakin ?",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.normal,
+                            ),
+                          ),
+                        ],
+                      ),
+                      showCloseButton: false,
+                      isDismissible: false,
+                      primaryButton: Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.grey,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                  horizontal: 24,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                              },
+                              child: const Text(
+                                'Batal',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                  horizontal: 24,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                                context.read<CheckResultCubit>().submitReport(
+                                  imagePath: capturedImagePath,
+                                  latitude: latitude,
+                                  longitude: longitude,
+                                  type: ReportType.expired.value,
+                                );
+                              },
+                              child: const Text(
+                                'Laporkan',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                  icon: Icon(
+                    Icons.report_problem_outlined,
+                    size: 24,
+                    color: Colors.red[400],
+                  ),
+                  tooltip: "Laporkan Reklame",
+                ),
             ],
           ),
         ),

@@ -10,14 +10,16 @@ const String staticTestAssetPath = 'assets/images/guardian_reklame.jpg';
 class ResultsListViewWidget extends StatelessWidget {
   final List<BillboardEntity> data;
   final String capturedImagePath;
+  final double latitude;
+  final double longitude;
 
   const ResultsListViewWidget({
     super.key,
     required this.data,
-    required this.capturedImagePath, // 💡 Wajib diinisialisasi
+    required this.capturedImagePath,
+    required this.latitude,
+    required this.longitude,
   });
-
-  // Catatan: Fungsi _buildResultCard HARUS dipindahkan atau dijadikan bagian dari ResultCardWidget
 
   @override
   Widget build(BuildContext context) {
@@ -99,7 +101,12 @@ class ResultsListViewWidget extends StatelessWidget {
             itemCount: data.length,
             itemBuilder: (context, index) {
               final item = data[index];
-              return ResultCardWidget(billboard: item);
+              return ResultCardWidget(
+                billboard: item,
+                capturedImagePath: capturedImagePath,
+                latitude: latitude,
+                longitude: longitude,
+              );
             },
           ),
         ),
