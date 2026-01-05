@@ -1,15 +1,17 @@
 import 'package:dio/dio.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http_parser/http_parser.dart'; // Wajib untuk MediaType
 import '../models/billboard_model.dart';
 
 class BillboardRemoteDataSource {
   final Dio dio;
-  static const String baseUrl = 'http://112.140.162.23:8181/api';
+  // static const String baseUrl = 'http://112.140.162.23:8181/api';
+  final String baseUrl = dotenv.env['BASE_URL'] ?? 'URL_NOT_FOUND';
 
   BillboardRemoteDataSource(this.dio);
 
   Future<List<BillboardModel>> checkReklame({required String imagePath}) async {
-    const endpoint = '$baseUrl/ReklameChecker/CheckReklame';
+    final endpoint = '$baseUrl/ReklameChecker/CheckReklame';
 
     // 1. Siapkan File (MultipartFile)
     final fileName = imagePath.split('/').last;

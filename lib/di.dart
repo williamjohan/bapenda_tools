@@ -3,6 +3,7 @@ import 'package:cekreklamemobile/core/services/map_service.dart';
 import 'package:cekreklamemobile/domain/usecases/post_report_usecase.dart';
 import 'package:cekreklamemobile/presentation/features/result/bloc/check_result_cubit.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get_it/get_it.dart';
 // 💡 Pastikan import ini benar (sesuai lokasi file Anda)
 import 'data/datasources/billboard_remote_datasource.dart';
@@ -14,7 +15,16 @@ final GetIt locator = GetIt.instance;
 
 void setupLocator() {
   // --- External Dependencies ---
-  locator.registerLazySingleton<Dio>(() => Dio());
+  locator.registerLazySingleton<Dio>(
+    () => Dio(
+      BaseOptions(
+        // Ambil baseUrl dari .env di sini agar semua request otomatis pakai ini
+        baseUrl: dotenv.env['BASE_URL'] ?? '',
+        connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 10),
+      ),
+    ),
+  );
 
   // --- Data Layer ---
   // 1. Remote Data Source (butuh Dio)
