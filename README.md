@@ -33,6 +33,7 @@ Proyek ini menggunakan arsitektur **Clean Architecture** yang diimplementasikan 
 | **Data** | `lib/data/` | Data Eksternal. Mengambil dan Menyimpan. | **Data Sources** (API/Remote), **Models** (JSON Mappers), **Repository Impl**. |
 | **Presentation** | `lib/presentation/` | UI dan State Management. | **Cubit** (Business Logic), **Views** (Stateless Widgets), Shared Widgets. |
 | **Core** | `lib/core/` | Global Utilities (Non-Bisnis). | **Services** (`MapService`), **Utils** (`date_utils`, `file_copy_utils`). |
+| **Routes** | `lib/routes/` | Navigasi & Alur Halaman. | **Constants** (`AppRoutes`), **GoRouter Config** (`appRouter`). |
 
 ### State Management
 
