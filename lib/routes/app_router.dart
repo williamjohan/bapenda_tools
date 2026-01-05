@@ -16,7 +16,7 @@ final GoRouter appRouter = GoRouter(
   routes: [
     GoRoute(
       path: AppRoutes.splashscreen,
-      name: AppRoutes.splashscreen, // 💡 Tambahkan name
+      name: AppRoutes.splashscreen,
       builder: (context, state) => const SplashScreen(),
     ),
 
@@ -44,14 +44,11 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) => const CaptureScreen(),
     ),
 
-    // Rute HASIL CEK (CheckResultScreen)
     GoRoute(
       path: AppRoutes.results,
       name: AppRoutes.results,
       builder: (context, state) {
-        // Menerima arguments dari CaptureScreen
         final args = state.extra as Map<String, dynamic>?;
-
         return CheckResultScreen(
           imagePath: args?['imagePath'] ?? '',
           latitude: args?['latitude'] ?? 0.0,
@@ -60,7 +57,6 @@ final GoRouter appRouter = GoRouter(
       },
     ),
 
-    // Rute DETAIL BILLBOARD
     GoRoute(
       path: AppRoutes.detail,
       name: AppRoutes.detail,

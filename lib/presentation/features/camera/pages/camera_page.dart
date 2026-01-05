@@ -28,6 +28,7 @@ class _CaptureScreenState extends State<CaptureScreen>
   Offset? _focusPoint;
   bool _isCapturing = false;
   bool _isProcessingData = false;
+  bool _isShutterLocked = false;
   double _minZoomLevel = 1.0;
   double _maxZoomLevel = 1.0;
   double _currentZoomLevel = 1.0;
@@ -108,15 +109,10 @@ class _CaptureScreenState extends State<CaptureScreen>
   Future<void> _initCameraAndPermissions() async {
     final cameras = await availableCameras();
 
-    if (!mounted) {
-      return;
-    }
+    if (!mounted) return;
 
     if (cameras.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Tidak ada kamera tersedia.")),
-      );
-      Navigator.pop(context);
+      _showErrorAndPop("Tidak ada kamera tersedia.");
       return;
     }
 
@@ -124,16 +120,27 @@ class _CaptureScreenState extends State<CaptureScreen>
       cameras.first,
       ResolutionPreset.high,
       enableAudio: false,
+      imageFormatGroup: Platform.isAndroid
+          ? ImageFormatGroup.jpeg
+          : ImageFormatGroup.bgra8888,
     );
 
     try {
       await controller!.initialize();
+
       controller!.setFlashMode(_currentFlashMode);
 
       // 🔍 CETAK NILAI DIAGNOSTIK
       // debugPrint(
       //   'Camera Aspect Ratio DILAPORKAN: ${controller!.value.aspectRatio}',
       // );
+
+      // Set Auto Focus secara kontinu agar kamera selalu siap tanpa perlu "hunting" fokus saat tombol ditekan
+      try {
+        await controller!.setFocusMode(FocusMode.auto);
+      } catch (e) {
+        debugPrint("Fokus otomatis tidak didukung pada perangkat ini");
+      }
 
       _minZoomLevel = await controller!.getMinZoomLevel();
       _maxZoomLevel = await controller!.getMaxZoomLevel();
@@ -142,61 +149,59 @@ class _CaptureScreenState extends State<CaptureScreen>
         setState(() => _isCameraInitialized = true);
       }
     } on CameraException catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Error inisialisasi kamera: ${e.description}"),
-          ),
-        );
-        Navigator.pop(context);
-      }
+      _showErrorAndPop("Error kamera: ${e.description}");
     }
   }
 
   Future<void> _capturePhotoAndLocation() async {
-    if (!controller!.value.isInitialized || _isCapturing) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Kamera belum siap.")));
+    // 1. GENTLE THROTTLE: Jika sedang proses, langsung abaikan tanpa Toast yang mengganggu
+    if (controller == null ||
+        !controller!.value.isInitialized ||
+        _isCapturing) {
       return;
     }
 
-    // A. Set Flag Awal
+    // 2. FEEDBACK INSTAN: Getaran (Haptic) & Animasi Shutter (Opsional)
+    // User merasa "perintah diterima" tanpa perlu klik berkali-kali
+    HapticFeedback.mediumImpact();
+
     setState(() {
+      _isShutterLocked = true;
       _isCapturing = true;
     });
 
-    // B. Cek apakah layanan lokasi aktif
-    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      // Tampilkan peringatan, dan JANGAN lanjutkan ke langkah 2.
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Layanan GPS tidak aktif. Mohon nyalakan GPS Anda."),
-            duration: Duration(seconds: 4),
-          ),
-        );
-      }
-      Geolocator.openLocationSettings();
-      setState(() {
-        _isCapturing = false;
-        _isProcessingData = false;
-      });
-      return;
-    }
-
-    //*  ----------------------------------------------------------------
-    //* LOGIC AMBIL FOTO, CROP, DAN GPS
-    //* -----------------------------------------------------------------
-    CroppedFile? croppedFile;
-    Position? position;
-
     try {
-      // 1. Ambil foto
+      // 3. OPTIMASI CAPTURE: Ambil foto DULU sebelum urusan GPS
+      // Semakin cepat takePicture dipanggil, semakin kecil risiko blur karena gerak
       final XFile capturedFile = await controller!.takePicture();
 
-      croppedFile = await ImageCropper().cropImage(
+      setState(() {
+        _isShutterLocked = false;
+      });
+
+      // 4. CEK GPS: Dilakukan setelah foto aman di memori
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        // Tampilkan peringatan, dan JANGAN lanjutkan ke langkah 2.
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                "Layanan GPS tidak aktif. Mohon nyalakan GPS Anda.",
+              ),
+              duration: Duration(seconds: 4),
+            ),
+          );
+        }
+        Geolocator.openLocationSettings();
+        return;
+      }
+
+      // 5. PROSES BERAT (CROP & GPS)
+      // Gunakan _isProcessingData untuk menampilkan Loading Overlay agar tombol tidak bisa ditekan
+      setState(() => _isProcessingData = true);
+
+      final croppedFile = await ImageCropper().cropImage(
         sourcePath: capturedFile.path,
         compressQuality: 70,
         uiSettings: [
@@ -216,18 +221,15 @@ class _CaptureScreenState extends State<CaptureScreen>
       if (croppedFile == null) {
         setState(() {
           _isCapturing = false;
+          _isShutterLocked = false;
           _isProcessingData = false;
         });
         return;
       }
 
-      setState(() {
-        _isProcessingData = true; // Overlay Aktif: Mulai proses GPS dan I/O
-      });
-
-      position = await Geolocator.getCurrentPosition(
+      final position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
-      ).timeout(const Duration(seconds: 10)); // Timeout setelah 10 detik
+      ).timeout(const Duration(seconds: 8));
 
       if (mounted) {
         // a. Deep Copy File (Ambil path dari CroppedFile yang sudah di-crop)
@@ -253,25 +255,11 @@ class _CaptureScreenState extends State<CaptureScreen>
         return;
       }
     } on TimeoutException {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Gagal mendapatkan lokasi GPS: Waktu habis."),
-          ),
-        );
-      }
+      _showErrorSnackBar("Gagal mendapatkan lokasi GPS: Waktu habis.");
     } on CameraException catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Gagal mengambil foto: ${e.description}")),
-        );
-      }
+      _showErrorSnackBar("Gagal mengambil foto: ${e.description}");
     } on PlatformException catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Gagal mendapatkan lokasi: ${e.message}")),
-        );
-      }
+      _showErrorSnackBar("Masalah sistem: ${e.message}");
     } finally {
       if (mounted) {
         setState(() {
@@ -279,6 +267,23 @@ class _CaptureScreenState extends State<CaptureScreen>
           _isProcessingData = false;
         });
       }
+    }
+  }
+
+  void _showErrorSnackBar(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+    }
+  }
+
+  void _showErrorAndPop(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+      Navigator.pop(context);
     }
   }
 
@@ -424,8 +429,9 @@ class _CaptureScreenState extends State<CaptureScreen>
                     ],
                   ),
                 ),
+
                 //* ===================================
-                //*  Shutter Button di tengah bawah
+                //* Shutter Button di tengah bawah
                 //* ===================================
                 Positioned(
                   bottom: 40,
@@ -434,23 +440,38 @@ class _CaptureScreenState extends State<CaptureScreen>
                   child: Center(
                     child: IconButton(
                       iconSize: 80,
-                      color: Colors.white,
-                      onPressed:
-                          _capturePhotoAndLocation, // Ambil foto dan lokasi
+                      onPressed: _isShutterLocked
+                          ? null
+                          : _capturePhotoAndLocation,
                       icon: Container(
                         width: 80,
                         height: 80,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 6),
-                          color: Colors.white.withValues(
-                            alpha: 0.2,
-                          ), // Sedikit transparan
+                          border: Border.all(
+                            color: _isShutterLocked
+                                ? Colors.white30
+                                : Colors.white,
+                            width: 6,
+                          ),
+                          color: Colors.white.withValues(alpha: 0.2),
                         ),
-                        child: const Icon(
-                          Icons.camera_alt,
-                          size: 40,
-                        ), // Ikon kamera di dalam
+                        child: _isShutterLocked
+                            ? const Center(
+                                child: SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                ),
+                              )
+                            : const Icon(
+                                Icons.camera_alt,
+                                size: 40,
+                                color: Colors.white,
+                              ),
                       ),
                     ),
                   ),
