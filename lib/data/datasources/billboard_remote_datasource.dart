@@ -18,7 +18,6 @@ class BillboardRemoteDataSource {
     final file = await MultipartFile.fromFile(
       imagePath,
       filename: fileName,
-      // 🛑 Penting: Pastikan ini sesuai dengan kontrak API
       contentType: MediaType('image', 'png'),
     );
 
@@ -41,8 +40,10 @@ class BillboardRemoteDataSource {
           "API returned status code ${response.statusCode}: ${response.statusMessage}",
         );
       }
-    } on DioException catch (e) {
-      throw Exception("Failed to check reklame via API: ${e.message}");
+    } on DioException {
+      rethrow;
+    } catch (e) {
+      throw Exception("System Error: $e");
     }
   }
 
