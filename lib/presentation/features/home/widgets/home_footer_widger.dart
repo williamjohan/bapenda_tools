@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart'; // Import package
 
 class HomeFooter extends StatelessWidget {
   const HomeFooter({super.key});
@@ -9,6 +10,7 @@ class HomeFooter extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 10),
       child: Column(
         children: [
+          // ... Bagian Alamat Pemerintah Kota (Tetap Sama) ...
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
@@ -53,13 +55,21 @@ class HomeFooter extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                "Version Beta 1.0.0",
-                style: TextStyle(
-                  color: Colors.grey.shade400,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w500,
-                ),
+              // --- OTOMATISASI VERSION ---
+              FutureBuilder<PackageInfo>(
+                future: PackageInfo.fromPlatform(),
+                builder: (context, snapshot) {
+                  // Jika data sudah siap, tampilkan versi dari pubspec.yaml
+                  String version = snapshot.data?.version ?? "1.0.0";
+                  return Text(
+                    "Version Beta $version",
+                    style: TextStyle(
+                      color: Colors.grey.shade400,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  );
+                },
               ),
               Text(
                 "© 2024 Bapenda Kota Surabaya",
