@@ -69,6 +69,12 @@ class CheckResultCubit extends Cubit<CheckResultState> {
 
   String _mapErrorToMessage(dynamic e) {
     if (e is DioException) {
+      // Log detail untuk mempermudah debugging saat di lapangan
+      debugPrint("🚨 Dio Error: [${e.type}] ${e.message}");
+      if (e.response != null) {
+        debugPrint("🚨 Data: ${e.response?.data}");
+      }
+
       switch (e.type) {
         case DioExceptionType.connectionTimeout:
         case DioExceptionType.sendTimeout:
@@ -81,16 +87,25 @@ class CheckResultCubit extends Cubit<CheckResultState> {
           return FailureMessages.badRequest;
 
         case DioExceptionType.connectionError:
+          // Cek apakah ini karena masalah SSL/Handshake (HTTPS pada IP)
+          if (e.message?.contains("HandshakeException") ?? false) {
+            return "Masalah Keamanan (SSL): Gunakan HTTP atau cek sertifikat server.";
+          }
           return FailureMessages.noInternet;
 
         default:
-          debugPrint("Dio Error Detail: ${e.message}");
-          debugPrint("Dio Error Type: ${e.type}");
+          // Jika error mengandung kata kunci koneksi, arahkan ke Network Error
+          if (e.message?.contains("SocketException") ?? false) {
+            return FailureMessages.noInternet;
+          }
           return FailureMessages.unknownError;
       }
     }
-    // Jika error terjadi di level pemrosesan file
-    if (e.toString().contains("Failed") || e.toString().contains("File")) {
+
+    // KHUSUS ERROR FILE: Kita buat lebih spesifik agar tidak bentrok dengan error network
+    final errorStr = e.toString();
+    if (errorStr.contains("FileSystemException") ||
+        (errorStr.contains("File") && errorStr.contains("copy"))) {
       return FailureMessages.fileProcessError;
     }
 

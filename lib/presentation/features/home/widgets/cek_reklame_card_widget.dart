@@ -1,7 +1,6 @@
 import 'package:cekreklamemobile/core/services/map_service.dart';
 import 'package:cekreklamemobile/di.dart';
 import 'package:cekreklamemobile/presentation/shared/widgets/custom_modal_widget.dart';
-import 'package:cekreklamemobile/presentation/features/home/home_handlers.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'dart:async';
@@ -75,7 +74,7 @@ class _NearbyBillboardCardState extends State<NearbyBillboardCard>
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(15),
               ),
             ),
             onPressed: () {
@@ -87,11 +86,6 @@ class _NearbyBillboardCardState extends State<NearbyBillboardCard>
           showCloseButton: false,
           isDismissible: true,
         );
-      }
-    } else {
-      // 3. Jika GPS aktif, navigasi ke CameraPage
-      if (mounted) {
-        handleCaptureTap(context);
       }
     }
   }
@@ -156,7 +150,7 @@ class _NearbyBillboardCardState extends State<NearbyBillboardCard>
       // 🟢 Panggil update untuk lokasi awal (menggantikan logic URL/setState lama)
       _updateMapAndLocation(position);
 
-      // 4. MULAI STREAM (Bug 2b)
+      // 4. MULAI STREAM
       _positionSubscription =
           Geolocator.getPositionStream(
             locationSettings: const LocationSettings(
@@ -179,155 +173,180 @@ class _NearbyBillboardCardState extends State<NearbyBillboardCard>
     }
   }
 
-  Widget _buildLocationStatus(BuildContext context) {
-    final bool isActive = _isLocationServiceEnabled && !_isLoading;
-    final Color color = isActive ? Colors.green : Colors.red;
-    final String text = isActive ? "Aktif" : "Tidak Aktif";
-
-    return Row(
-      children: [
-        // Indikator Dot
-        Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
-        const SizedBox(width: 6),
-        // Teks Status (Aktif/Tidak Aktif)
-        Text(
-          text,
-          style: TextStyle(
-            color: color,
-            fontWeight: FontWeight.w600,
-            fontSize: 13,
-          ),
-        ),
-        const SizedBox(width: 8),
-        // Ikon Lokasi (Tambahan jika mati)
-        if (!isActive) Icon(Icons.location_off, color: Colors.red, size: 16),
-      ],
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: _onTapCard, // Panggil logic tap
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(10, 10, 10, 5),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: const [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 6,
-              offset: Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+    return Container(
+      // Gunakan Container pembungkus untuk shadow agar tidak terpotong InkWell
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(15),
+          onTap: _onTapCard,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Text(
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    "Cek Reklame \nSekitar Anda",
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                // Header Card: Title + Status Badge
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          "Layanan Lokasi",
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF1A1A1A),
+                          ),
+                        ),
+                      ],
+                    ),
+                    // Badge Status "Aktif" ala AI
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _isLocationServiceEnabled
+                            ? const Color(0xFFE8F5E9) // Hijau sangat muda
+                            : const Color(0xFFFFEBEE), // Merah sangat muda
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: _isLocationServiceEnabled
+                                  ? Colors.green
+                                  : Colors.red,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            _isLocationServiceEnabled ? "Aktif" : "Mati",
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: _isLocationServiceEnabled
+                                  ? Colors.green.shade700
+                                  : Colors.red.shade700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 5),
+
+                // Widget Map Image
+                Container(
+                  height: 160, // Sedikit lebih tinggi sesuai AI
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(15),
+                    border: Border.all(color: Colors.grey.shade50),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(15),
+                    child: _isLoading
+                        ? const Center(
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : !_isLocationServiceEnabled
+                        ? _buildServiceDisabledPlaceholder(
+                            context,
+                            message:
+                                "Layanan Lokasi (GPS) dimatikan. Mohon nyalakan.",
+                            status: _locationPermissionStatus,
+                            serviceEnabled: _isLocationServiceEnabled,
+                          )
+                        : _mapImageUrl != null
+                        ? Image.network(
+                            _mapImageUrl!,
+                            fit: BoxFit.cover,
+                            // Animasi halus saat gambar muncul
+                            frameBuilder:
+                                (
+                                  context,
+                                  child,
+                                  frame,
+                                  wasSynchronouslyLoaded,
+                                ) {
+                                  return AnimatedOpacity(
+                                    opacity: frame == null ? 0 : 1,
+                                    duration: const Duration(milliseconds: 500),
+                                    curve: Curves.easeOut,
+                                    child: child,
+                                  );
+                                },
+                          )
+                        : const Center(child: Text("Memuat Peta...")),
                   ),
                 ),
-                const SizedBox(width: 16),
+
+                const SizedBox(height: 5),
+
+                // Widget Koordinat
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
+                  height: 40,
+                  width: double.infinity,
+                  alignment: Alignment.centerLeft,
+                  // Kita hilangkan AnimatedSwitcher jika ingin teks "Lat: ..." langsung ada sejak awal
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.location_on_rounded,
+                          size: 14,
+                          // Ikon berubah warna saat data sudah siap
+                          color: (_isLoading || _currentPosition == null)
+                              ? Colors.grey.shade400
+                              : const Color(0xFFE53935),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          // LOGIKA TEKS: Jika loading/null tampilkan ..., jika ada tampilkan angkanya
+                          (_isLoading || _isLocationServiceEnabled == false)
+                              ? 'Lat: ..., Long: ...'
+                              : 'Lat: ${_currentPosition!.latitude.toStringAsFixed(4)}, Long: ${_currentPosition!.longitude.toStringAsFixed(4)}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: (_isLoading || _currentPosition == null)
+                                ? Colors.grey.shade400
+                                : Colors.grey.shade700,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  decoration: BoxDecoration(
-                    color: _isLocationServiceEnabled
-                        ? Colors.green.shade100
-                        : Colors.red.shade100,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: _buildLocationStatus(context),
                 ),
               ],
             ),
-            const SizedBox(height: 10),
-            //* ==========================================
-            //*          WIDGET UNTUK MAP IMAGE
-            //* ==========================================
-            Container(
-              height: 150,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    // Kondisi 1 : Jika service mati, TAMPILKAN PLACEHOLDER
-                    : !_isLocationServiceEnabled
-                    ? _buildServiceDisabledPlaceholder(
-                        context,
-                        status: _locationPermissionStatus,
-                        serviceEnabled: _isLocationServiceEnabled,
-                      )
-                    // Kondisi 2 :  Service Aktif DAN Lokasi Ditemukan
-                    : _mapImageUrl != null
-                    ? Image.network(
-                        _mapImageUrl!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) =>
-                            _buildServiceDisabledPlaceholder(
-                              context,
-                              // Ini adalah pesan error jaringan/API (Service Active, tapi gagal muat)
-                              message:
-                                  "Gagal memuat peta. Periksa koneksi Anda.",
-                              status: _locationPermissionStatus,
-                              serviceEnabled: _isLocationServiceEnabled,
-                            ),
-                      )
-                    // Kondisi 3 : Service Aktif tapi _mapImageUrl masih null (gagal fetch awal)
-                    : _buildServiceDisabledPlaceholder(
-                        context,
-                        status: _locationPermissionStatus,
-                        serviceEnabled: _isLocationServiceEnabled,
-                        message: "Memuat lokasi...",
-                      ),
-              ),
-            ),
-
-            //* ==========================================
-            //*      WIDGET UNTUK KOORDINAT LOKASI
-            //* ==========================================
-            if (!_isLoading &&
-                _currentPosition != null &&
-                _isLocationServiceEnabled) ...[
-              const SizedBox(height: 8), // Padding setelah status badge
-              Row(
-                children: [
-                  // Ikon Lokasi yang sedang aktif
-                  Icon(
-                    Icons.my_location,
-                    size: 14,
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.primary, // Warna Biru Tema
-                  ),
-                  const SizedBox(width: 4),
-                  // Teks Koordinat
-                  Text(
-                    'Lat: ${_currentPosition!.latitude.toStringAsFixed(6)}, Long: ${_currentPosition!.longitude.toStringAsFixed(6)}',
-                    style: const TextStyle(fontSize: 12, color: Colors.black54),
-                  ),
-                ],
-              ),
-            ],
-          ],
+          ),
         ),
       ),
     );
@@ -352,7 +371,7 @@ Widget _buildServiceDisabledPlaceholder(
   // 🟢 KOREKSI 1: Prioritaskan Izin Ditolak Sementara (Soft Denied)
   else if (status == LocationPermission.denied) {
     finalMessage =
-        "Akses Lokasi belum diberikan. Klik 'Capture' untuk meminta izin.";
+        "Permission Lokasi belum diberikan. Klik 'Capture' untuk meminta izin.";
   }
   // 2. Prioritas Terakhir: Layanan GPS Dimatikan (Service Toggle)
   else if (!serviceEnabled) {

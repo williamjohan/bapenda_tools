@@ -1,8 +1,8 @@
 import 'package:cekreklamemobile/presentation/features/home/widgets/capture_card_widget.dart';
 import 'package:cekreklamemobile/presentation/features/home/widgets/greeting_card_widget.dart';
 import 'package:cekreklamemobile/presentation/features/home/widgets/cek_reklame_card_widget.dart';
-import 'package:cekreklamemobile/presentation/features/home/widgets/report_card_widget.dart';
-import 'package:cekreklamemobile/presentation/shared/widgets/bottom_navigation_widget.dart';
+import 'package:cekreklamemobile/presentation/features/home/widgets/home_footer_widger.dart';
+import 'package:cekreklamemobile/presentation/shared/widgets/custom_modal_widget.dart'; // Import modal
 import 'package:flutter/material.dart';
 
 class HomePage extends StatelessWidget {
@@ -15,29 +15,70 @@ class HomePage extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6FA),
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(70),
+        preferredSize: const Size.fromHeight(
+          80,
+        ), // Naikkan sedikit agar tidak sesak
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            padding: const EdgeInsets.only(
+              left: 20,
+              right: 0,
+              top: 10,
+              bottom: 10,
+            ),
             child: Row(
               children: [
-                Image.asset('assets/images/logosby.png', height: 55),
+                Image.asset('assets/images/logosby.png', height: 50),
                 const SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Cek Reklame",
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black87,
+                // Expanded memastikan teks mengambil sisa ruang dan mendorong titik tiga ke kanan
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        "Cek Reklame",
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
                       ),
+                      Text(
+                        "Kota Surabaya",
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: Colors.black54,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // --- MENU TITIK TIGA ---
+                PopupMenuButton<String>(
+                  padding: EdgeInsets.zero,
+                  // Offset(x, y) -> x negatif akan menggeser menu ke arah kiri
+                  // y positif akan menggeser menu sedikit ke bawah agar tidak menumpuk ikon
+                  offset: const Offset(-20, 0),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  icon: const Icon(
+                    Icons.more_vert_rounded,
+                    color: Colors.black45,
+                  ),
+                  onSelected: (value) => _handleMenuSelection(context, value),
+                  itemBuilder: (context) => [
+                    _buildPopupItem(
+                      'update',
+                      Icons.system_update_alt_rounded,
+                      "Perbarui Aplikasi",
+                      Colors.blue,
                     ),
-                    Text(
-                      "Kota Surabaya",
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: Colors.black54,
-                      ),
+                    _buildPopupItem(
+                      'report',
+                      Icons.bug_report_outlined,
+                      "Lapor Kendala",
+                      Colors.redAccent,
                     ),
                   ],
                 ),
@@ -47,22 +88,97 @@ class HomePage extends StatelessWidget {
         ),
       ),
       body: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const GreetingCard(),
-            const SizedBox(height: 20),
-            const CaptureBillboardButton(),
-            const SizedBox(height: 20),
-            const MyReportsCard(),
-            const SizedBox(height: 20),
-            const NearbyBillboardCard(),
-            const SizedBox(height: 40),
+          children: const [
+            GreetingCard(),
+            SizedBox(height: 12),
+            CaptureBillboardButton(),
+            SizedBox(height: 12),
+            NearbyBillboardCard(),
+            SizedBox(height: 10),
+            HomeFooter(),
           ],
         ),
       ),
-      bottomNavigationBar: buildBottomNav(),
     );
+  }
+
+  // Helper untuk membuat item menu yang rapi
+  PopupMenuItem<String> _buildPopupItem(
+    String value,
+    IconData icon,
+    String title,
+    Color color,
+  ) {
+    return PopupMenuItem(
+      value: value,
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: color),
+          const SizedBox(width: 12),
+          Text(
+            title,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Logic untuk menangani klik menu
+  void _handleMenuSelection(BuildContext context, String value) {
+    if (value == 'update') {
+      showAppModal(
+        context: context,
+        title: "Pembaruan Aplikasi",
+        content: const Text(
+          "Versi Anda sudah yang terbaru (Beta 1.0.0). Kami akan memberi tahu jika ada versi baru.",
+          textAlign: TextAlign.center,
+        ),
+        primaryButton: ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF175CFF),
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(15),
+            ),
+          ),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+          child: const Text("Oke"),
+        ),
+        showCloseButton: false,
+        isDismissible: true,
+      );
+    } else {
+      showAppModal(
+        context: context,
+        title: "Lapor Kendala",
+        content: const Text(
+          "Ada kendala teknis? Hubungi tim IT Bapenda Surabaya melalui WhatsApp atau Email.",
+          textAlign: TextAlign.center,
+        ),
+        primaryButton: ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF175CFF),
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(15),
+            ),
+          ),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+          child: const Text("Hubungi Tim IT"),
+        ),
+        showCloseButton: false,
+        isDismissible: true,
+      );
+    }
   }
 }
