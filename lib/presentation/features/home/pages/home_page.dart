@@ -4,6 +4,7 @@ import 'package:cekreklamemobile/presentation/features/home/widgets/cek_reklame_
 import 'package:cekreklamemobile/presentation/features/home/widgets/home_footer_widger.dart';
 import 'package:cekreklamemobile/presentation/shared/widgets/custom_modal_widget.dart'; // Import modal
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -128,32 +129,37 @@ class HomePage extends StatelessWidget {
   }
 
   // Logic untuk menangani klik menu
-  void _handleMenuSelection(BuildContext context, String value) {
+  void _handleMenuSelection(BuildContext context, String value) async {
     if (value == 'update') {
-      showAppModal(
-        context: context,
-        title: "Pembaruan Aplikasi",
-        content: const Text(
-          "Versi Anda sudah yang terbaru (Beta 1.0.0). Kami akan memberi tahu jika ada versi baru.",
-          textAlign: TextAlign.center,
-        ),
-        primaryButton: ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF175CFF),
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(15),
-            ),
+      // 1. Ambil info paket secara dinamis
+      final PackageInfo packageInfo = await PackageInfo.fromPlatform();
+      final String currentVersion = packageInfo.version;
+
+      if (context.mounted) {
+        showAppModal(
+          context: context,
+          title: "Pembaruan Aplikasi",
+          content: Text(
+            // 2. Masukkan variabel currentVersion ke dalam teks
+            "Versi Anda sudah yang terbaru (Beta $currentVersion). Kami akan memberi tahu jika ada versi baru.",
+            textAlign: TextAlign.center,
           ),
-          onPressed: () {
-            Navigator.pop(context);
-          },
-          child: const Text("Oke"),
-        ),
-        showCloseButton: false,
-        isDismissible: true,
-      );
+          primaryButton: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF175CFF),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
+            ),
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Oke"),
+          ),
+          showCloseButton: false,
+          isDismissible: true,
+        );
+      }
     } else {
       showAppModal(
         context: context,
