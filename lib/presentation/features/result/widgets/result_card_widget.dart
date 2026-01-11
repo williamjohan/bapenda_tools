@@ -182,77 +182,90 @@ class ResultCardWidget extends StatelessWidget {
                   onPressed: () {
                     showAppModal(
                       context: context,
+                      showCloseButton: false,
+                      isDismissible: false,
                       content: Column(
                         children: [
-                          SizedBox(height: 10),
-                          Text(
-                            "Apakah Anda yakin ?",
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.normal,
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.red.withOpacity(0.1),
+                              shape: BoxShape.circle,
                             ),
+                            child: const Icon(
+                              Icons.warning_amber_rounded,
+                              color: Colors.red,
+                              size: 32,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+
+                          const Text(
+                            "Konfirmasi Pelaporan",
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+
+                          const Text(
+                            AppConstants.questionReportExpired,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: 14, color: Colors.grey),
                           ),
                         ],
                       ),
-                      showCloseButton: false,
-                      isDismissible: false,
+
                       primaryButton: Row(
                         children: [
                           Expanded(
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.grey,
-                                foregroundColor: Colors.white,
+                            child: OutlinedButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              style: OutlinedButton.styleFrom(
                                 padding: const EdgeInsets.symmetric(
                                   vertical: 12,
-                                  horizontal: 24,
                                 ),
+                                side: BorderSide(color: Colors.grey.shade300),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
+                                foregroundColor: Colors.grey.shade700,
                               ),
-                              onPressed: () {
-                                Navigator.of(context).pop();
-                              },
                               child: const Text(
-                                'Batal',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                                "Batal",
+                                style: TextStyle(fontWeight: FontWeight.w600),
                               ),
                             ),
                           ),
-                          const SizedBox(width: 10),
+
+                          const SizedBox(width: 12),
                           Expanded(
                             child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 12,
-                                  horizontal: 24,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                              ),
                               onPressed: () {
                                 Navigator.of(context).pop();
+
                                 context.read<CheckResultCubit>().submitReport(
                                   imagePath: capturedImagePath,
                                   latitude: latitude,
                                   longitude: longitude,
-                                  type: ReportType.expired.value,
+                                  type: ReportType.ilegal.value,
                                 );
                               },
-                              child: const Text(
-                                'Laporkan',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
+                              style: ElevatedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
                                 ),
+                                backgroundColor: Colors.redAccent,
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              child: const Text(
+                                "Ya, Laporkan",
+                                style: TextStyle(fontWeight: FontWeight.bold),
                               ),
                             ),
                           ),

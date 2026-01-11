@@ -109,49 +109,86 @@ class _CaptureScreenState extends State<CaptureScreen>
   }
 
   Future<void> _initCameraAndPermissions() async {
-    final cameras = await availableCameras();
-
-    if (!mounted) return;
-
-    if (cameras.isEmpty) {
-      _showErrorAndPop("Tidak ada kamera tersedia.");
-      return;
+    // Jika controller sudah ada sebelumnya (misal user refresh/retry),
+    // matikan dulu controller lama agar tidak tabrakan/memory leak.
+    if (controller != null) {
+      await controller!.dispose();
     }
 
-    controller = CameraController(
-      cameras.first,
-      ResolutionPreset.high,
-      enableAudio: false,
-      imageFormatGroup: Platform.isAndroid
-          ? ImageFormatGroup.jpeg
-          : ImageFormatGroup.bgra8888,
-    );
-
     try {
+      // 1. Ambil list kamera
+      final cameras = await availableCameras();
+
+      // Cek mounted agar tidak lanjut jika user sudah keluar layar
+      if (!mounted) return;
+
+      // 2. Cek apakah ada kamera
+      if (cameras.isEmpty) {
+        _showErrorAndPop("Tidak ada kamera tersedia di perangkat ini.");
+        return;
+      }
+
+      // 3. Pilih Kamera Belakang (Back)
+      final camera = cameras.firstWhere(
+        (camera) => camera.lensDirection == CameraLensDirection.back,
+        orElse: () => cameras.first,
+      );
+
+      // 4. Inisialisasi Controller
+      controller = CameraController(
+        camera,
+        ResolutionPreset.max, // ✅ KUNCI KETAJAMAN
+        enableAudio: false, // Optimasi performa
+        imageFormatGroup: Platform.isAndroid
+            ? ImageFormatGroup.jpeg
+            : ImageFormatGroup.bgra8888,
+      );
+
+      // 5. Mulai Kamera
       await controller!.initialize();
 
-      controller!.setFlashMode(_currentFlashMode);
+      // --- CONFIGURATION BLOCKS (Aman dengan try-catch terpisah) ---
 
-      // 🔍 CETAK NILAI DIAGNOSTIK
-      // debugPrint(
-      //   'Camera Aspect Ratio DILAPORKAN: ${controller!.value.aspectRatio}',
-      // );
+      // A. Flash (Opsional, kadang gagal di awal)
+      try {
+        await controller!.setFlashMode(_currentFlashMode);
+      } catch (e) {
+        debugPrint("Set Flash gagal (non-fatal): $e");
+      }
 
-      // Set Auto Focus secara kontinu
+      // B. Focus (PENTING: Continuous Auto Focus)
       try {
         await controller!.setFocusMode(FocusMode.auto);
       } catch (e) {
-        debugPrint("Fokus otomatis tidak didukung pada perangkat ini");
+        debugPrint("Fitur Auto Focus tidak didukung: $e");
       }
 
-      _minZoomLevel = await controller!.getMinZoomLevel();
-      _maxZoomLevel = await controller!.getMaxZoomLevel();
+      // C. Exposure (Agar cahaya menyesuaikan otomatis)
+      try {
+        await controller!.setExposureMode(ExposureMode.auto);
+      } catch (e) {
+        debugPrint("Fitur Auto Exposure tidak didukung: $e");
+      }
 
+      // D. Zoom Capabilities
+      // Bungkus try-catch juga untuk jaga-jaga
+      try {
+        _minZoomLevel = await controller!.getMinZoomLevel();
+        _maxZoomLevel = await controller!.getMaxZoomLevel();
+      } catch (e) {
+        // Default fallback jika gagal baca zoom
+        _minZoomLevel = 1.0;
+        _maxZoomLevel = 1.0;
+      }
+
+      // 6. Update UI
       if (mounted) {
         setState(() => _isCameraInitialized = true);
       }
     } on CameraException catch (e) {
-      _showErrorAndPop("Error kamera: ${e.description}");
+      _showErrorAndPop("Gagal inisialisasi kamera: ${e.description}");
+    } catch (e) {
+      _showErrorAndPop("Terjadi kesalahan sistem kamera: $e");
     }
   }
 

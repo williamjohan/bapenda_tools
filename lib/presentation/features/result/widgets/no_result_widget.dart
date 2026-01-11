@@ -1,5 +1,6 @@
 import 'package:cekreklamemobile/core/constants/app_constants.dart';
 import 'package:cekreklamemobile/presentation/features/result/bloc/check_result_cubit.dart';
+import 'package:cekreklamemobile/presentation/shared/widgets/custom_modal_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'dart:io';
@@ -78,7 +79,7 @@ class NoResultsWidget extends StatelessWidget {
                       const Padding(
                         padding: EdgeInsets.symmetric(horizontal: 40),
                         child: Text(
-                          "Tidak ada papan reklame terdaftar di area ini. Jika Anda menemukan reklame di sini, silakan lapor.",
+                          AppConstants.noResultSub,
                           textAlign: TextAlign.center,
                           style: TextStyle(color: Colors.grey),
                         ),
@@ -111,11 +112,93 @@ class NoResultsWidget extends StatelessWidget {
               height: 50,
               child: ElevatedButton.icon(
                 onPressed: () {
-                  context.read<CheckResultCubit>().submitReport(
-                    imagePath: capturedImagePath,
-                    latitude: latitude,
-                    longitude: longitude,
-                    type: ReportType.ilegal.value,
+                  showAppModal(
+                    context: context,
+                    showCloseButton: false,
+                    isDismissible: false,
+                    content: Column(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.warning_amber_rounded,
+                            color: Colors.red,
+                            size: 32,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        const Text(
+                          "Konfirmasi Pelaporan",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+
+                        const Text(
+                          AppConstants.questionReportIlegal,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 14, color: Colors.grey),
+                        ),
+                      ],
+                    ),
+
+                    primaryButton: Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              side: BorderSide(color: Colors.grey.shade300),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              foregroundColor: Colors.grey.shade700,
+                            ),
+                            child: const Text(
+                              "Batal",
+                              style: TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () {
+                              Navigator.of(context).pop();
+
+                              context.read<CheckResultCubit>().submitReport(
+                                imagePath: capturedImagePath,
+                                latitude: latitude,
+                                longitude: longitude,
+                                type: ReportType.ilegal.value,
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              backgroundColor: Colors.redAccent,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: const Text(
+                              "Ya, Laporkan",
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   );
                 },
                 icon: const Icon(Icons.campaign, color: Colors.white),

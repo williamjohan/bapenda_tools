@@ -46,7 +46,7 @@ final GoRouter appRouter = GoRouter(
           key: state.pageKey,
           child: const CaptureScreen(),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            const begin = 0.8;
+            const begin = 0.9;
             const end = 1.0;
             const curve = Curves.easeOutExpo;
             var tween = Tween(
