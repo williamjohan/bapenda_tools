@@ -5,6 +5,7 @@ enum FailureType {
   noInternet,
   unknownError,
   fileProcessError,
+  sslError,
 }
 
 class FailureMessages {
@@ -15,4 +16,6 @@ class FailureMessages {
   static const String noInternet = "Tidak ada koneksi internet.";
   static const String unknownError = "Terjadi kesalahan yang tidak diketahui.";
   static const String fileProcessError = "Gagal memproses file gambar.";
+  static const String sslError =
+      "Gagal verifikasi keamanan. Hal ini bisa terjadi karena sinyal yang tidak stabil.";
 }

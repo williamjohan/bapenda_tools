@@ -135,7 +135,7 @@ class _CaptureScreenState extends State<CaptureScreen>
       //   'Camera Aspect Ratio DILAPORKAN: ${controller!.value.aspectRatio}',
       // );
 
-      // Set Auto Focus secara kontinu agar kamera selalu siap tanpa perlu "hunting" fokus saat tombol ditekan
+      // Set Auto Focus secara kontinu
       try {
         await controller!.setFocusMode(FocusMode.auto);
       } catch (e) {
@@ -488,7 +488,7 @@ class _CaptureScreenState extends State<CaptureScreen>
                             CircularProgressIndicator(), // Loading utama
                             SizedBox(height: 16),
                             Text(
-                              "Memproses dan Mengirim Data...",
+                              "Menyiapkan Foto dan Lokasi...",
                               style: TextStyle(
                                 color: Colors.black54,
                                 fontWeight: FontWeight.w500,

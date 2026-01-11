@@ -4,6 +4,7 @@ import 'package:cekreklamemobile/presentation/features/result/bloc/check_result_
 import 'package:cekreklamemobile/presentation/features/result/widgets/error_state_widget.dart';
 import 'package:cekreklamemobile/presentation/features/result/widgets/no_result_widget.dart';
 import 'package:cekreklamemobile/presentation/features/result/widgets/result_list_view_widget.dart';
+import 'package:cekreklamemobile/presentation/features/result/widgets/upload_progress_widget.dart';
 import 'package:cekreklamemobile/presentation/shared/widgets/custom_modal_widget.dart';
 import 'package:cekreklamemobile/presentation/shared/widgets/processing_loading_widget.dart';
 import 'package:flutter/material.dart';
@@ -99,7 +100,7 @@ class CheckResultView extends StatelessWidget {
                   current is CheckResultError,
               builder: (context, state) {
                 if (state is CheckResultLoading) {
-                  return const Center(child: CircularProgressIndicator());
+                  return UploadProgressWidget(progress: state.progress);
                 }
                 if (state is CheckResultError) {
                   return ErrorStateWidget(message: state.message);

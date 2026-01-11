@@ -48,6 +48,7 @@ class BillboardRemoteDataSource {
     required String imagePath,
     required double latitude,
     required double longitude,
+    void Function(double)? onProgress,
   }) async {
     // 1. Buat URL dengan Query Parameters
     final endpoint =
@@ -69,6 +70,11 @@ class BillboardRemoteDataSource {
         endpoint, // URL sekarang sudah lengkap dengan lat/lon
         data: formData,
         options: Options(headers: {'accept': '*/*'}),
+        onSendProgress: (sent, total) {
+          if (total > 0 && onProgress != null) {
+            onProgress(sent / total);
+          }
+        },
       );
 
       // ... (Logika parsing response 200) ...

@@ -60,11 +60,13 @@ class BillboardRepositoryImpl implements BillboardRepository {
     required String imagePath,
     required double latitude,
     required double longitude,
+    void Function(double progress)? onProgress,
   }) async {
     final billboardModels = await remoteDataSource.checkReklameWithCoordinate(
       imagePath: imagePath,
       latitude: latitude,
       longitude: longitude,
+      onProgress: onProgress,
     );
     return billboardModels.map((model) => model.toEntity()).toList();
   }

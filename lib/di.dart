@@ -1,14 +1,12 @@
-// lib/di.dart
 import 'dart:io';
-
 import 'package:cekreklamemobile/core/services/map_service.dart';
 import 'package:cekreklamemobile/domain/usecases/post_report_usecase.dart';
 import 'package:cekreklamemobile/presentation/features/result/bloc/check_result_cubit.dart';
 import 'package:dio/dio.dart';
 import 'package:dio/io.dart';
+import 'package:dio_smart_retry/dio_smart_retry.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get_it/get_it.dart';
-// 💡 Pastikan import ini benar (sesuai lokasi file Anda)
 import 'data/datasources/billboard_remote_datasource.dart';
 import 'data/repositories/billboard_repository_impl.dart';
 import 'domain/repositories/billboard_repository.dart';
@@ -22,29 +20,47 @@ void setupLocator() {
     final dio = Dio(
       BaseOptions(
         baseUrl: dotenv.env['BASE_URL'] ?? '',
-        connectTimeout: const Duration(
-          seconds: 15,
-        ), // Naikkan sedikit untuk upload
-        receiveTimeout: const Duration(seconds: 15),
-        sendTimeout: const Duration(seconds: 20),
+        // STRATEGI 1: Perpanjang durasi timeout (30-45 detik)
+        // Memberi nafas lebih untuk jabat tangan SSL di hardware lama
+        connectTimeout: const Duration(seconds: 30),
+        receiveTimeout: const Duration(seconds: 30),
+        sendTimeout: const Duration(
+          seconds: 45,
+        ), // Lebih lama untuk upload gambar
       ),
     );
 
     (dio.httpClientAdapter as IOHttpClientAdapter).createHttpClient = () {
       final client = HttpClient();
-      client
-          .badCertificateCallback = (X509Certificate cert, String host, int port) {
-        // Hanya izinkan bypass jika host-nya adalah IP server Bapenda
-        final baseUrl = dotenv.env['BASE_URL'] ?? '';
-        if (baseUrl.contains(host)) {
-          return true;
-        }
-        return false; // Tetap blokir jika mencoba ke domain lain yang sertifikatnya rusak
-      };
+
+      // STRATEGI 2: Prioritaskan IPv4 (Menghindari kemacetan IPv6 di perangkat Redmi)
+      client.connectionTimeout = const Duration(seconds: 30);
+
+      client.badCertificateCallback =
+          (X509Certificate cert, String host, int port) {
+            final baseUrl = dotenv.env['BASE_URL'] ?? '';
+            if (baseUrl.contains(host)) return true;
+            return false;
+          };
       return client;
     };
 
-    // Tambahkan Interceptor ke objek Dio, bukan ke BaseOptions
+    // STRATEGI 3: Smart Retry
+    // Jika koneksi macet/timeout, coba lagi secara otomatis
+    dio.interceptors.add(
+      RetryInterceptor(
+        dio: dio,
+        logPrint: print, // Bisa diganti dengan logger Anda
+        retries: 3, // Coba ulang 3 kali
+        retryDelays: const [
+          Duration(seconds: 2),
+          Duration(seconds: 5),
+          Duration(seconds: 10),
+        ],
+        retryableExtraStatuses: {status408RequestTimeout},
+      ),
+    );
+
     dio.interceptors.add(
       LogInterceptor(
         request: true,

@@ -28,6 +28,9 @@ class CheckResultCubit extends Cubit<CheckResultState> {
         imagePath: imagePath,
         latitude: latitude,
         longitude: longitude,
+        onProgress: (progress) {
+          emit(CheckResultLoading(progress: progress));
+        },
       );
 
       emit(CheckResultLoaded(results));
@@ -42,7 +45,7 @@ class CheckResultCubit extends Cubit<CheckResultState> {
     required double longitude,
     required int type,
   }) async {
-    emit(CheckResultReporting()); // Tampilkan loading khusus lapor
+    emit(CheckResultReporting());
 
     await Future.delayed(const Duration(milliseconds: 500));
     try {
@@ -87,14 +90,12 @@ class CheckResultCubit extends Cubit<CheckResultState> {
           return FailureMessages.badRequest;
 
         case DioExceptionType.connectionError:
-          // Cek apakah ini karena masalah SSL/Handshake (HTTPS pada IP)
           if (e.message?.contains("HandshakeException") ?? false) {
-            return "Masalah Keamanan (SSL): Gunakan HTTP atau cek sertifikat server.";
+            return FailureMessages.sslError;
           }
           return FailureMessages.noInternet;
 
         default:
-          // Jika error mengandung kata kunci koneksi, arahkan ke Network Error
           if (e.message?.contains("SocketException") ?? false) {
             return FailureMessages.noInternet;
           }
@@ -102,7 +103,7 @@ class CheckResultCubit extends Cubit<CheckResultState> {
       }
     }
 
-    // KHUSUS ERROR FILE: Kita buat lebih spesifik agar tidak bentrok dengan error network
+    // KHUSUS ERROR FILE: spesifik agar tidak bentrok dengan error network
     final errorStr = e.toString();
     if (errorStr.contains("FileSystemException") ||
         (errorStr.contains("File") && errorStr.contains("copy"))) {

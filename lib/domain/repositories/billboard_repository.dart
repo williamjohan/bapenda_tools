@@ -11,6 +11,7 @@ abstract class BillboardRepository {
     required String imagePath,
     required double latitude,
     required double longitude,
+    void Function(double progress)? onProgress,
   });
 
   Future<bool> reportBillboard({

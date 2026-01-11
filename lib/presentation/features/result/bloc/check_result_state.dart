@@ -11,7 +11,13 @@ abstract class CheckResultState extends Equatable {
 
 class CheckResultInitial extends CheckResultState {}
 
-class CheckResultLoading extends CheckResultState {}
+class CheckResultLoading extends CheckResultState {
+  final double progress; // Tambahkan ini
+  const CheckResultLoading({this.progress = 0.0}); // Default 0.0
+
+  @override
+  List<Object?> get props => [progress];
+}
 
 class CheckResultLoaded extends CheckResultState {
   final List<BillboardEntity> results;
