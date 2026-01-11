@@ -2,7 +2,7 @@ import 'package:cekreklamemobile/presentation/features/home/widgets/capture_card
 import 'package:cekreklamemobile/presentation/features/home/widgets/greeting_card_widget.dart';
 import 'package:cekreklamemobile/presentation/features/home/widgets/cek_reklame_card_widget.dart';
 import 'package:cekreklamemobile/presentation/features/home/widgets/home_footer_widger.dart';
-import 'package:cekreklamemobile/presentation/shared/widgets/custom_modal_widget.dart'; // Import modal
+import 'package:cekreklamemobile/presentation/shared/widgets/custom_modal_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -15,23 +15,16 @@ class HomePage extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6FA),
+      // APP BAR TETAP SAMA
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(
-          80,
-        ), // Naikkan sedikit agar tidak sesak
+        preferredSize: const Size.fromHeight(80),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.only(
-              left: 20,
-              right: 0,
-              top: 10,
-              bottom: 10,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             child: Row(
               children: [
                 Image.asset('assets/images/logosby.png', height: 50),
                 const SizedBox(width: 12),
-                // Expanded memastikan teks mengambil sisa ruang dan mendorong titik tiga ke kanan
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -53,12 +46,9 @@ class HomePage extends StatelessWidget {
                     ],
                   ),
                 ),
-
-                // --- MENU TITIK TIGA ---
+                // MENU TITIK TIGA
                 PopupMenuButton<String>(
                   padding: EdgeInsets.zero,
-                  // Offset(x, y) -> x negatif akan menggeser menu ke arah kiri
-                  // y positif akan menggeser menu sedikit ke bawah agar tidak menumpuk ikon
                   offset: const Offset(-20, 0),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(15),
@@ -88,25 +78,45 @@ class HomePage extends StatelessWidget {
           ),
         ),
       ),
-      body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Column(
-          children: const [
-            GreetingCard(),
-            SizedBox(height: 12),
-            CaptureBillboardButton(),
-            SizedBox(height: 12),
-            NearbyBillboardCard(),
-            SizedBox(height: 10),
-            HomeFooter(),
-          ],
-        ),
+
+      // 🚀 INI PERBAIKAN UTAMANYA (STICKY FOOTER LOGIC)
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: ConstrainedBox(
+              // Paksa tinggi minimal setinggi layar (viewport)
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  // SpaceBetween akan mendorong Footer ke bawah
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // KELOMPOK KONTEN ATAS
+                    Column(
+                      children: const [
+                        GreetingCard(),
+                        SizedBox(height: 12),
+                        CaptureBillboardButton(),
+                        SizedBox(height: 12),
+                        NearbyBillboardCard(),
+                        SizedBox(height: 12),
+                      ],
+                    ),
+
+                    // FOOTER (Otomatis terdorong ke paling bawah)
+                    const HomeFooter(),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
 
-  // Helper untuk membuat item menu yang rapi
   PopupMenuItem<String> _buildPopupItem(
     String value,
     IconData icon,
@@ -128,10 +138,9 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  // Logic untuk menangani klik menu
   void _handleMenuSelection(BuildContext context, String value) async {
+    // ... Logika Handle Menu sama seperti sebelumnya ...
     if (value == 'update') {
-      // 1. Ambil info paket secara dinamis
       final PackageInfo packageInfo = await PackageInfo.fromPlatform();
       final String currentVersion = packageInfo.version;
 
@@ -140,7 +149,6 @@ class HomePage extends StatelessWidget {
           context: context,
           title: "Pembaruan Aplikasi",
           content: Text(
-            // 2. Masukkan variabel currentVersion ke dalam teks
             "Versi Anda sudah yang terbaru (Beta $currentVersion). Kami akan memberi tahu jika ada versi baru.",
             textAlign: TextAlign.center,
           ),
@@ -148,7 +156,6 @@ class HomePage extends StatelessWidget {
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF175CFF),
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(15),
               ),
@@ -157,7 +164,6 @@ class HomePage extends StatelessWidget {
             child: const Text("Oke"),
           ),
           showCloseButton: false,
-          isDismissible: true,
         );
       }
     } else {
@@ -172,18 +178,14 @@ class HomePage extends StatelessWidget {
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFF175CFF),
             foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(15),
             ),
           ),
-          onPressed: () {
-            Navigator.pop(context);
-          },
+          onPressed: () => Navigator.pop(context),
           child: const Text("Hubungi Tim IT"),
         ),
         showCloseButton: false,
-        isDismissible: true,
       );
     }
   }

@@ -41,7 +41,31 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: AppRoutes.camera,
       name: AppRoutes.camera,
-      builder: (context, state) => const CaptureScreen(),
+      pageBuilder: (context, state) {
+        return CustomTransitionPage(
+          key: state.pageKey,
+          child: const CaptureScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            const begin = 0.8;
+            const end = 1.0;
+            const curve = Curves.easeOutExpo;
+            var tween = Tween(
+              begin: begin,
+              end: end,
+            ).chain(CurveTween(curve: curve));
+
+            return FadeTransition(
+              opacity: animation,
+              child: ScaleTransition(
+                scale: animation.drive(tween),
+                child: child,
+              ),
+            );
+          },
+          // Durasi transisi (misal 300ms biar cepat seperti kamera asli)
+          transitionDuration: const Duration(milliseconds: 500),
+        );
+      },
     ),
 
     GoRoute(

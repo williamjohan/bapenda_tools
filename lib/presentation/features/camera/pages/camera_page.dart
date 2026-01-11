@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:developer';
 import 'dart:io';
 import 'package:cekreklamemobile/core/utils/file_copy_utils.dart';
+import 'package:cekreklamemobile/presentation/features/camera/widgets/processing_overlay_widget.dart';
 import 'package:cekreklamemobile/routes/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
@@ -33,6 +34,7 @@ class _CaptureScreenState extends State<CaptureScreen>
   double _maxZoomLevel = 1.0;
   double _currentZoomLevel = 1.0;
   double _baseZoomLevel = 1.0;
+  String _loadingMessage = "";
 
   void _handleScaleStart(ScaleStartDetails details) {
     _baseZoomLevel = _currentZoomLevel;
@@ -162,27 +164,22 @@ class _CaptureScreenState extends State<CaptureScreen>
     }
 
     // 2. FEEDBACK INSTAN: Getaran (Haptic) & Animasi Shutter (Opsional)
-    // User merasa "perintah diterima" tanpa perlu klik berkali-kali
     HapticFeedback.mediumImpact();
-
     setState(() {
       _isShutterLocked = true;
       _isCapturing = true;
     });
 
     try {
-      // 3. OPTIMASI CAPTURE: Ambil foto DULU sebelum urusan GPS
-      // Semakin cepat takePicture dipanggil, semakin kecil risiko blur karena gerak
+      // 3. CAPTURE FOTO
       final XFile capturedFile = await controller!.takePicture();
-
       setState(() {
         _isShutterLocked = false;
       });
 
-      // 4. CEK GPS: Dilakukan setelah foto aman di memori
+      // 4. PRE-CEK GPS SERVICE
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        // Tampilkan peringatan, dan JANGAN lanjutkan ke langkah 2.
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -197,9 +194,8 @@ class _CaptureScreenState extends State<CaptureScreen>
         return;
       }
 
-      // 5. PROSES BERAT (CROP & GPS)
-      // Gunakan _isProcessingData untuk menampilkan Loading Overlay agar tombol tidak bisa ditekan
-      setState(() => _isProcessingData = true);
+      // 5. CROPPER
+      if (mounted) setState(() => _isProcessingData = false);
 
       final croppedFile = await ImageCropper().cropImage(
         sourcePath: capturedFile.path,
@@ -227,33 +223,40 @@ class _CaptureScreenState extends State<CaptureScreen>
         return;
       }
 
+      setState(() {
+        _isProcessingData = true;
+        _loadingMessage = "Menyiapkan Foto...";
+      });
+
+      final File originalCroppedFile = File(croppedFile.path);
+      final File safeFileToUpload = await copyFileToCache(originalCroppedFile);
+
+      //delay 1s to show loading message
+      await Future.delayed(const Duration(milliseconds: 1200));
+
+      if (!mounted) return;
+
+      setState(() {
+        _loadingMessage = "Mencari Titik GPS...";
+      });
+
+      // 6. GET GPS
       final position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       ).timeout(const Duration(seconds: 8));
 
-      if (mounted) {
-        // a. Deep Copy File (Ambil path dari CroppedFile yang sudah di-crop)
-        final File originalCroppedFile = File(croppedFile.path);
-        final File safeFileToUpload = await copyFileToCache(
-          originalCroppedFile,
-        );
+      await Future.delayed(const Duration(milliseconds: 800));
 
-        if (!mounted) {
-          return;
-        }
+      if (!mounted) return;
 
-        // b. Navigasi dan Submit
-        await context.pushNamed(
-          AppRoutes.results,
-          extra: {
-            'imagePath': safeFileToUpload.path,
-            'latitude': position.latitude,
-            'longitude': position.longitude,
-          },
-        );
-
-        return;
-      }
+      await context.pushNamed(
+        AppRoutes.results,
+        extra: {
+          'imagePath': safeFileToUpload.path,
+          'latitude': position.latitude,
+          'longitude': position.longitude,
+        },
+      );
     } on TimeoutException {
       _showErrorSnackBar("Gagal mendapatkan lokasi GPS: Waktu habis.");
     } on CameraException catch (e) {
@@ -340,59 +343,52 @@ class _CaptureScreenState extends State<CaptureScreen>
   Widget build(BuildContext context) {
     if (!_isCameraInitialized) {
       return const Scaffold(
-        backgroundColor: Colors.white,
-        body: Center(child: CircularProgressIndicator(color: Colors.black)),
+        backgroundColor: Colors.black,
+        body: Center(
+          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+        ),
       );
     }
 
     // Tampilan Kamera Live
     return AnimatedOpacity(
-      // Masking Transisi Glitch
       opacity: _isCameraInitialized ? 1.0 : 0.0,
       duration: const Duration(milliseconds: 400),
       child: PopScope(
         canPop: true,
         child: Scaffold(
           backgroundColor: Colors.black,
-          // 💡 KOREKSI: Tambahkan ColoredBox untuk masking yang lebih baik
           body: ColoredBox(
             color: Colors.black,
             child: Stack(
               children: [
-                // 2a. Camera Preview (dengan Glitch Fix dan Gesture)
+                // a. Camera Preview (dengan Glitch Fix dan Gesture)
                 Positioned.fill(
                   child: AnimatedOpacity(
-                    // Tetap pertahankan AnimatedOpacity untuk masking transisi
                     opacity: _isCameraInitialized ? 1.0 : 0.0,
                     duration: const Duration(milliseconds: 400),
                     child: ColoredBox(
-                      color: Colors.black, // Masking background
+                      color: Colors.black,
                       child: GestureDetector(
                         onTapDown: _handleTapToFocus,
                         onScaleStart: _handleScaleStart,
                         onScaleUpdate: _handleScaleUpdate,
 
-                        // 🟢 KOREKSI KRUSIAL: Kembalikan LayoutBuilder dan FittedBox
                         child: ClipRRect(
-                          // ClipRRect harus membungkus LayoutBuilder
                           child: LayoutBuilder(
                             builder: (context, constraints) {
                               final screenWidth = constraints.maxWidth;
-                              // Catatan: controller!.value.aspectRatio memberikan rasio terbalik di beberapa perangkat,
-                              // jadi kita gunakan 1 / rasio untuk mendapatkan nilai H:W (0.75) yang benar.
                               final cameraRatio =
                                   1 / controller!.value.aspectRatio;
-
                               final requiredPreviewHeight =
                                   screenWidth / cameraRatio;
 
                               return SizedBox.expand(
                                 child: FittedBox(
-                                  fit: BoxFit.cover, // Wajib COVER
+                                  fit: BoxFit.cover,
                                   child: SizedBox(
                                     width: screenWidth,
-                                    height:
-                                        requiredPreviewHeight, // Tinggi dihitung berdasarkan rasio yang benar
+                                    height: requiredPreviewHeight,
                                     child: CameraPreview(controller!),
                                   ),
                                 ),
@@ -405,7 +401,7 @@ class _CaptureScreenState extends State<CaptureScreen>
                   ),
                 ),
 
-                // 2b. AppBar/Header
+                // b. AppBar/Header
                 Positioned(
                   top: 0,
                   left: 0,
@@ -430,9 +426,7 @@ class _CaptureScreenState extends State<CaptureScreen>
                   ),
                 ),
 
-                //* ===================================
-                //* Shutter Button di tengah bawah
-                //* ===================================
+                // c.Shutter Button di tengah bawah
                 Positioned(
                   bottom: 40,
                   left: 0,
@@ -477,29 +471,7 @@ class _CaptureScreenState extends State<CaptureScreen>
                   ),
                 ),
 
-                if (_isProcessingData)
-                  const Positioned.fill(
-                    child: ColoredBox(
-                      color: Colors.white,
-                      child: Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            CircularProgressIndicator(), // Loading utama
-                            SizedBox(height: 16),
-                            Text(
-                              "Menyiapkan Foto dan Lokasi...",
-                              style: TextStyle(
-                                color: Colors.black54,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-
+                // d. Indikator Fokus Tap-to-Focus
                 if (_focusPoint != null)
                   Positioned(
                     // Posisi top/left dihitung dari _focusPoint yang disimpan di State
@@ -515,6 +487,10 @@ class _CaptureScreenState extends State<CaptureScreen>
                       ),
                     ),
                   ),
+
+                // f. Overlay Proses Data
+                if (_isProcessingData)
+                  ProcessingOverlayWidget(message: _loadingMessage),
               ],
             ),
           ),
