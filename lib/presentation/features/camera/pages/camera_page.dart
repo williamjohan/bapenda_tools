@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:developer';
 import 'dart:io';
-import 'package:cekreklamemobile/core/utils/file_copy_utils.dart';
+import 'package:cekreklamemobile/core/utils/file_cache_utils.dart';
 import 'package:cekreklamemobile/presentation/features/camera/widgets/processing_overlay_widget.dart';
 import 'package:cekreklamemobile/routes/app_routes.dart';
 import 'package:flutter/material.dart';
@@ -266,7 +266,9 @@ class _CaptureScreenState extends State<CaptureScreen>
       });
 
       final File originalCroppedFile = File(croppedFile.path);
-      final File safeFileToUpload = await copyFileToCache(originalCroppedFile);
+      final File safeFileToUpload = await FileCacheHelper.saveToCache(
+        originalCroppedFile,
+      );
 
       //delay 1s to show loading message
       await Future.delayed(const Duration(milliseconds: 1200));

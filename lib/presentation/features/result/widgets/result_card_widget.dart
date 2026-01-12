@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'package:cekreklamemobile/core/constants/app_constants.dart';
+import 'package:cekreklamemobile/core/utils/image_utils.dart';
 import 'package:cekreklamemobile/domain/value_objects/billboard_status.dart';
 import 'package:cekreklamemobile/domain/entities/billboard_entity.dart';
 import 'package:cekreklamemobile/presentation/features/result/bloc/check_result_cubit.dart';
@@ -7,7 +8,6 @@ import 'package:cekreklamemobile/presentation/features/result/widgets/image_prev
 import 'package:cekreklamemobile/presentation/shared/widgets/custom_modal_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../core/utils/image_utils.dart';
 
 class ResultCardWidget extends StatelessWidget {
   final BillboardEntity billboard;
@@ -29,7 +29,9 @@ class ResultCardWidget extends StatelessWidget {
       billboard.isActive,
       billboard.isExpired,
     );
-    final Uint8List? imageBytes = decodeBase64DataUrl(billboard.imageUrl);
+    final Uint8List? imageBytes = ImageUtils.decodeBase64DataUrl(
+      billboard.imageUrl,
+    );
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),

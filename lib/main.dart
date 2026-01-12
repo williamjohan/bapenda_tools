@@ -1,4 +1,4 @@
-import 'package:cekreklamemobile/core/utils/file_copy_utils.dart';
+import 'package:cekreklamemobile/core/utils/file_cache_utils.dart';
 import 'package:cekreklamemobile/di.dart';
 import 'package:cekreklamemobile/routes/app_router.dart';
 import 'package:flutter/material.dart';
@@ -8,7 +8,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
   setupLocator();
-  await cleanUploadCache();
+  await FileCacheHelper.clearCache();
   runApp(const MyApp());
 }
 

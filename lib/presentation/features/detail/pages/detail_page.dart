@@ -1,8 +1,8 @@
 import 'dart:typed_data';
 
+import 'package:cekreklamemobile/core/utils/image_utils.dart';
 import 'package:cekreklamemobile/domain/entities/billboard_entity.dart';
 import 'package:flutter/material.dart';
-import 'package:cekreklamemobile/core/utils/image_utils.dart';
 
 class BillboardDetailScreen extends StatelessWidget {
   // 💡 Halaman ini HANYA menerima BillboardEntity.
@@ -13,7 +13,9 @@ class BillboardDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Tentukan warna status
-    final Uint8List? imageBytes = decodeBase64DataUrl(billboard.imageUrl);
+    final Uint8List? imageBytes = ImageUtils.decodeBase64DataUrl(
+      billboard.imageUrl,
+    );
     Color statusColor = billboard.isActive ? Colors.green : Colors.red;
     String statusText = billboard.isActive
         ? "Active (Terdaftar)"

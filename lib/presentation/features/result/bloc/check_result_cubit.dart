@@ -1,5 +1,8 @@
 // lib/presentation/features/result/bloc/check_result_cubit.dart
+import 'dart:io';
+
 import 'package:cekreklamemobile/core/errors/failures.dart';
+import 'package:cekreklamemobile/core/utils/image_utils.dart';
 import 'package:cekreklamemobile/domain/entities/billboard_entity.dart';
 import 'package:cekreklamemobile/domain/usecases/check_billboard_usecase.dart';
 import 'package:cekreklamemobile/domain/usecases/post_report_usecase.dart';
@@ -26,8 +29,12 @@ class CheckResultCubit extends Cubit<CheckResultState> {
     await Future.delayed(const Duration(milliseconds: 500));
 
     try {
+      File originalFile = File(imagePath);
+      File compressedFile = await ImageUtils.compressImage(originalFile);
+      final String finalPath = compressedFile.path;
+
       final results = await checkBillboard.call(
-        imagePath: imagePath,
+        imagePath: finalPath,
         latitude: latitude,
         longitude: longitude,
         onProgress: (progress) {
@@ -52,8 +59,12 @@ class CheckResultCubit extends Cubit<CheckResultState> {
 
     await Future.delayed(const Duration(milliseconds: 500));
     try {
+      File originalFile = File(imagePath);
+      File compressedFile = await ImageUtils.compressImage(originalFile);
+      final String finalPath = compressedFile.path;
+
       final isSuccess = await postReport.call(
-        imagePath: imagePath,
+        imagePath: finalPath,
         latitude: latitude,
         longitude: longitude,
         type: type,
