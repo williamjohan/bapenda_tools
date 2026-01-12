@@ -20,7 +20,12 @@ class HomePage extends StatelessWidget {
         preferredSize: const Size.fromHeight(80),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            padding: const EdgeInsets.only(
+              left: 20,
+              right: 0,
+              top: 10,
+              bottom: 10,
+            ),
             child: Row(
               children: [
                 Image.asset('assets/images/logosby.png', height: 50),

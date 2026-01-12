@@ -11,7 +11,7 @@ class ProcessingOverlayWidget extends StatelessWidget {
 
     return Positioned.fill(
       child: Container(
-        color: Colors.black.withOpacity(0.7),
+        color: Colors.black.withValues(alpha: 0.7),
         child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -70,7 +70,7 @@ class ProcessingOverlayWidget extends StatelessWidget {
               Text(
                 message,
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.8),
+                  color: Colors.white.withValues(alpha: 0.8),
                   fontSize: 14,
                 ),
               ),

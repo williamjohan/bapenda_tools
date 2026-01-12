@@ -61,7 +61,13 @@ class CheckResultView extends StatelessWidget {
               ),
               onPressed: () {
                 Navigator.of(context).pop();
-                context.pop();
+                if (state.reportType == 2) {
+                  // KASUS EXPIRED (Tipe 2):
+                  context.read<CheckResultCubit>().backToResult();
+                } else {
+                  // KASUS ILLEGAL (Tipe 1):
+                  context.pop();
+                }
               },
               child: const Text(
                 'OK',

@@ -13,6 +13,7 @@ class BillboardEntity extends Equatable {
   // Status dan Tanggal
   final bool isActive; // Status aktif
   final bool isExpired; // Status kadaluarsa
+  final bool isReported; // Status sudah dilaporkan
   final DateTime startDate; // Dari tglMulaiBerlaku
   final DateTime endDate; // Dari tglAkhirBerlaku
 
@@ -39,6 +40,7 @@ class BillboardEntity extends Equatable {
     required this.distance,
     required this.status,
     required this.score,
+    this.isReported = false,
   });
 
   @override
@@ -59,4 +61,42 @@ class BillboardEntity extends Equatable {
     status,
     score,
   ];
+
+  BillboardEntity copyWith({
+    String? id,
+    String? name,
+    String? type,
+    String? address,
+    String? detailLocation,
+    String? status,
+    bool? isActive,
+    bool? isExpired,
+    DateTime? startDate,
+    DateTime? endDate,
+    String? imageUrl,
+    double? latitude,
+    double? longitude,
+    double? distance,
+    double? score,
+    bool? isReported, // Parameter baru
+  }) {
+    return BillboardEntity(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      type: type ?? this.type,
+      address: address ?? this.address,
+      detailLocation: detailLocation ?? this.detailLocation,
+      status: status ?? this.status,
+      isActive: isActive ?? this.isActive,
+      isExpired: isExpired ?? this.isExpired,
+      startDate: startDate ?? this.startDate,
+      endDate: endDate ?? this.endDate,
+      imageUrl: imageUrl ?? this.imageUrl,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      distance: distance ?? this.distance,
+      score: score ?? this.score,
+      isReported: isReported ?? this.isReported,
+    );
+  }
 }

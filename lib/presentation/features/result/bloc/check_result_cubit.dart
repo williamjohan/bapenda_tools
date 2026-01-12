@@ -11,11 +11,12 @@ import 'check_result_state.dart';
 class CheckResultCubit extends Cubit<CheckResultState> {
   final CheckBillboardUseCase checkBillboard;
   final PostReportUsecase postReport;
+  List<BillboardEntity> _currentResults = [];
 
   CheckResultCubit(this.checkBillboard, this.postReport)
     : super(CheckResultInitial());
 
-  Future<void> fetchResults2({
+  Future<void> fetchResults({
     required String imagePath,
     required double latitude,
     required double longitude,
@@ -33,7 +34,7 @@ class CheckResultCubit extends Cubit<CheckResultState> {
           emit(CheckResultLoading(progress: progress));
         },
       );
-
+      _currentResults = results;
       emit(CheckResultLoaded(results));
     } catch (e) {
       emit(CheckResultError(_mapErrorToMessage(e)));
@@ -45,6 +46,7 @@ class CheckResultCubit extends Cubit<CheckResultState> {
     required double latitude,
     required double longitude,
     required int type,
+    String? reklameId,
   }) async {
     emit(CheckResultReporting());
 
@@ -58,8 +60,14 @@ class CheckResultCubit extends Cubit<CheckResultState> {
       );
 
       if (isSuccess) {
+        if (type == 2 && reklameId != null) {
+          _markItemAsReported(reklameId);
+        }
         emit(
-          CheckResultReportSuccess("Laporan berhasil terkirim. Terimakasih!"),
+          CheckResultReportSuccess(
+            "Laporan berhasil terkirim. Terimakasih!",
+            reportType: type,
+          ),
         );
       } else {
         emit(
@@ -114,7 +122,11 @@ class CheckResultCubit extends Cubit<CheckResultState> {
     return FailureMessages.unknownError;
   }
 
-  Future<void> fetchResults({
+  void backToResult() {
+    emit(CheckResultLoaded(_currentResults));
+  }
+
+  Future<void> testingfetchResult({
     required String imagePath,
     required double latitude,
     required double longitude,
@@ -191,7 +203,20 @@ class CheckResultCubit extends Cubit<CheckResultState> {
             "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400",
       ),
     ];
+    _currentResults = dummyData;
     // 3. EMIT LOADED (Langsung sukses menampilkan data dummy)
     emit(CheckResultLoaded(dummyData));
+  }
+
+  void _markItemAsReported(String id) {
+    final updatedList = _currentResults.map((item) {
+      if (item.id == id) {
+        // Pastikan model Anda punya copyWith dan field isReported
+        return item.copyWith(isReported: true);
+      }
+      return item;
+    }).toList();
+
+    _currentResults = updatedList; // Update variable memory
   }
 }

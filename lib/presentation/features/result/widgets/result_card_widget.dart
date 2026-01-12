@@ -179,106 +179,123 @@ class ResultCardWidget extends StatelessWidget {
               //buat icon untuk lapor
               if (billboard.isExpired)
                 IconButton(
-                  onPressed: () {
-                    showAppModal(
-                      context: context,
-                      showCloseButton: false,
-                      isDismissible: false,
-                      content: Column(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Colors.red.withOpacity(0.1),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.warning_amber_rounded,
-                              color: Colors.red,
-                              size: 32,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-
-                          const Text(
-                            "Konfirmasi Pelaporan",
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-
-                          const Text(
-                            AppConstants.questionReportExpired,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 14, color: Colors.grey),
-                          ),
-                        ],
-                      ),
-
-                      primaryButton: Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton(
-                              onPressed: () => Navigator.of(context).pop(),
-                              style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 12,
+                  onPressed: billboard.isReported
+                      ? null
+                      : () {
+                          showAppModal(
+                            context: context,
+                            showCloseButton: false,
+                            isDismissible: false,
+                            content: Column(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.red.withValues(alpha: 0.1),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.warning_amber_rounded,
+                                    color: Colors.red,
+                                    size: 32,
+                                  ),
                                 ),
-                                side: BorderSide(color: Colors.grey.shade300),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                foregroundColor: Colors.grey.shade700,
-                              ),
-                              child: const Text(
-                                "Batal",
-                                style: TextStyle(fontWeight: FontWeight.w600),
-                              ),
-                            ),
-                          ),
+                                const SizedBox(height: 16),
 
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: () {
-                                Navigator.of(context).pop();
+                                const Text(
+                                  "Konfirmasi Pelaporan",
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
 
-                                context.read<CheckResultCubit>().submitReport(
-                                  imagePath: capturedImagePath,
-                                  latitude: latitude,
-                                  longitude: longitude,
-                                  type: ReportType.ilegal.value,
-                                );
-                              },
-                              style: ElevatedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 12,
+                                const Text(
+                                  AppConstants.questionReportExpired,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey,
+                                  ),
                                 ),
-                                backgroundColor: Colors.redAccent,
-                                foregroundColor: Colors.white,
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                              child: const Text(
-                                "Ya, Laporkan",
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
+                              ],
                             ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
+
+                            primaryButton: Row(
+                              children: [
+                                Expanded(
+                                  child: OutlinedButton(
+                                    onPressed: () =>
+                                        Navigator.of(context).pop(),
+                                    style: OutlinedButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 12,
+                                      ),
+                                      side: BorderSide(
+                                        color: Colors.grey.shade300,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      foregroundColor: Colors.grey.shade700,
+                                    ),
+                                    child: const Text(
+                                      "Batal",
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: ElevatedButton(
+                                    onPressed: () {
+                                      Navigator.of(context).pop();
+
+                                      context
+                                          .read<CheckResultCubit>()
+                                          .submitReport(
+                                            imagePath: capturedImagePath,
+                                            latitude: latitude,
+                                            longitude: longitude,
+                                            type: ReportType.expired.value,
+                                            reklameId: billboard.id,
+                                          );
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 12,
+                                      ),
+                                      backgroundColor: Colors.redAccent,
+                                      foregroundColor: Colors.white,
+                                      elevation: 0,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                    child: const Text(
+                                      "Ya, Laporkan",
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
                   icon: Icon(
                     Icons.report_problem_outlined,
                     size: 24,
-                    color: Colors.red[400],
+                    color: billboard.isReported ? Colors.grey : Colors.red[400],
                   ),
-                  tooltip: "Laporkan Reklame",
+                  tooltip: billboard.isReported
+                      ? "Sudah dilaporkan"
+                      : "Laporkan Reklame",
                 ),
             ],
           ),

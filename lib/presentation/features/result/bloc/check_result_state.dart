@@ -41,10 +41,11 @@ class CheckResultReporting extends CheckResultState {}
 
 class CheckResultReportSuccess extends CheckResultState {
   final String message;
-  const CheckResultReportSuccess(this.message);
+  final int reportType;
+  const CheckResultReportSuccess(this.message, {required this.reportType});
 
   @override
-  List<Object?> get props => [message];
+  List<Object?> get props => [message, reportType];
 }
 
 class CheckResultReportError extends CheckResultState {

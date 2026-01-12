@@ -126,8 +126,8 @@ class ResultsListViewWidget extends StatelessWidget {
             color: Colors.white,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(
-                  0.05,
+                color: Colors.black.withValues(
+                  alpha: 0.05,
                 ), // Sedikit lebih soft valuenya
                 offset: const Offset(0, -4),
                 blurRadius: 10,
@@ -169,7 +169,7 @@ class ResultsListViewWidget extends StatelessWidget {
                             Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: Colors.red.withOpacity(0.1),
+                                color: Colors.red.withValues(alpha: 0.1),
                                 shape: BoxShape.circle,
                               ),
                               child: const Icon(
@@ -223,6 +223,7 @@ class ResultsListViewWidget extends StatelessWidget {
                             ),
 
                             const SizedBox(width: 12),
+
                             Expanded(
                               child: ElevatedButton(
                                 onPressed: () {
@@ -269,9 +270,7 @@ class ResultsListViewWidget extends StatelessWidget {
                       ),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(
-                        0xFF175CFF,
-                      ), // Saya ubah Merah agar beda (opsional, bisa tetap Biru)
+                      backgroundColor: const Color(0xFF175CFF),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
