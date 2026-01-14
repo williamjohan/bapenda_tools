@@ -8,34 +8,64 @@ class UploadProgressWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Logika tampilan sederhana
-    final bool isUploading = progress > 0;
+    // 1. LOGIC STATE:
+    // Cek apakah sudah 100% (1.0). Jika ya, berarti masuk fase "Processing Server"
+    final bool isProcessing = progress >= 1.0;
+    // Cek apakah sedang upload (antara 0.1 sampai 0.99)
+    final bool isUploading = progress > 0 && progress < 1.0;
+
     final String percentage = (progress * 100).toStringAsFixed(0);
 
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // 1. Indikator Lingkaran
+          // 2. Indikator Lingkaran
           SizedBox(
-            width: 60,
-            height: 60,
-            child: CircularProgressIndicator(
-              // Jika 0 = Indeterminate (Muter terus)
-              // Jika > 0 = Determinate (Mengisi sesuai value)
-              value: isUploading ? progress : null,
-              backgroundColor: Colors.grey[200],
-              strokeWidth: 6,
-              valueColor: const AlwaysStoppedAnimation<Color>(Colors.blue),
+            width: 70, // Sedikit diperbesar biar lega
+            height: 70,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // Layer 1: Circular Progress
+                CircularProgressIndicator(
+                  // TRICK UX:
+                  // Jika isProcessing (100%), kita set NULL agar dia MUTER LAGI (Indeterminate).
+                  // Ini memberi sinyal psikologis "Sabar, sistem masih bekerja".
+                  // Jika isUploading, isi sesuai progress.
+                  value: isUploading ? progress : null,
+
+                  backgroundColor: Colors.grey[200],
+                  strokeWidth: 6,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    // Ubah warna jadi Hijau jika sudah processing (opsional, biar beda rasa)
+                    isProcessing ? Colors.green : Colors.blue,
+                  ),
+                ),
+
+                // Layer 2: Icon/Text ditengah lingkaran (Opsional - Pemanis)
+                if (isProcessing)
+                  const Icon(Icons.cloud_sync, color: Colors.green, size: 32),
+                if (isUploading)
+                  Text(
+                    "$percentage%",
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+              ],
             ),
           ),
           const SizedBox(height: 24),
 
-          // 2. Teks Status Utama
+          // 3. Teks Status Utama
           Text(
-            isUploading
-                ? "Mengirim Data: $percentage%"
-                : "Menghubungkan ke Server...",
+            isProcessing
+                ? "Memproses Data..."
+                : (isUploading
+                      ? "Mengirim Data..."
+                      : "Menghubungkan ke Server..."),
             style: const TextStyle(
               fontSize: 16,
               color: Colors.black87,
@@ -43,14 +73,17 @@ class UploadProgressWidget extends StatelessWidget {
             ),
           ),
 
-          // 3. Subteks (Penjelasan)
+          // 4. Subteks (Penjelasan)
           const SizedBox(height: 8),
-          Text(
-            isUploading
-                ? "Mohon tunggu, jangan tutup aplikasi."
-                : "Sedang melakukan verifikasi keamanan (SSL)...",
-            style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-            textAlign: TextAlign.center,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32.0),
+            child: Text(
+              isProcessing
+                  ? "Sedang mencocokkan gambar di server. Mohon tunggu sebentar..."
+                  : "Jangan tutup aplikasi saat proses berjalan.",
+              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+              textAlign: TextAlign.center,
+            ),
           ),
         ],
       ),

@@ -2,9 +2,11 @@ import 'dart:io';
 import 'package:cekreklamemobile/core/services/map_service.dart';
 import 'package:cekreklamemobile/domain/usecases/post_report_usecase.dart';
 import 'package:cekreklamemobile/presentation/features/result/bloc/check_result_cubit.dart';
+import 'package:chucker_flutter/chucker_flutter.dart';
 import 'package:dio/dio.dart';
 import 'package:dio/io.dart';
 import 'package:dio_smart_retry/dio_smart_retry.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get_it/get_it.dart';
 import 'data/datasources/billboard_remote_datasource.dart';
@@ -71,6 +73,10 @@ void setupLocator() {
         error: true,
       ),
     );
+
+    if (kDebugMode) {
+      dio.interceptors.add(ChuckerDioInterceptor());
+    }
 
     return dio;
   });

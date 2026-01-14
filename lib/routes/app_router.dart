@@ -3,6 +3,8 @@ import 'package:cekreklamemobile/presentation/features/detail/pages/detail_page.
 import 'package:cekreklamemobile/presentation/features/home/pages/home_page.dart';
 import 'package:cekreklamemobile/presentation/features/result/pages/check_result_page.dart';
 import 'package:cekreklamemobile/splashscreen.dart';
+import 'package:chucker_flutter/chucker_flutter.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'app_routes.dart';
@@ -12,6 +14,7 @@ import '../presentation/features/auth/pages/signup_page.dart';
 import '../presentation/features/camera/pages/camera_page.dart';
 
 final GoRouter appRouter = GoRouter(
+  observers: [if (kDebugMode) ChuckerFlutter.navigatorObserver],
   initialLocation: AppRoutes.splashscreen,
   routes: [
     GoRoute(
