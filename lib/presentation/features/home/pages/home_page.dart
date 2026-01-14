@@ -3,6 +3,7 @@ import 'package:cekreklamemobile/presentation/features/home/widgets/greeting_car
 import 'package:cekreklamemobile/presentation/features/home/widgets/cek_reklame_card_widget.dart';
 import 'package:cekreklamemobile/presentation/features/home/widgets/home_footer_widger.dart';
 import 'package:cekreklamemobile/presentation/shared/widgets/custom_modal_widget.dart';
+import 'package:cekreklamemobile/presentation/shared/widgets/update_progress_dialog_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -165,8 +166,16 @@ class HomePage extends StatelessWidget {
                 borderRadius: BorderRadius.circular(15),
               ),
             ),
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Oke"),
+            onPressed: () {
+              Navigator.pop(context);
+              UpdateProgressDialogWidget.show(
+                context, // Tidak perlu named parameter context lagi
+                downloadUrl:
+                    "https://telegram.org/dl/android/apk", // Contoh URL
+                version: "Test Update",
+              );
+            },
+            child: const Text("Tes Download"),
           ),
           showCloseButton: false,
         );
