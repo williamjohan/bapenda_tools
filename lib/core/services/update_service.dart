@@ -2,20 +2,34 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import '../utils/update_utils.dart';
-import '../../presentation/shared/widgets/update_progress_dialog_widget.dart'; // Import Widget Lama Anda
+import '../../presentation/shared/widgets/update_progress_dialog_widget.dart';
+
+// Model Data Update
+class UpdateInfo {
+  final String version;
+  final String changelog;
+  final String downloadUrl;
+
+  UpdateInfo({
+    required this.version,
+    required this.changelog,
+    required this.downloadUrl,
+  });
+}
 
 class UpdateService {
   final Dio _dio;
 
-  // URL JSON Anda
+  // URL JSON (Pastikan Direct Download / Raw)
   final String _jsonUrl =
       "https://drivebapenda.surabaya.go.id/s/JHs8ksmt2HqxoRJ/download";
 
   UpdateService(this._dio);
 
-  Future<void> checkForUpdate(BuildContext context) async {
+  // 1. FUNGSI CEK UPDATE (Mengembalikan Data atau Null)
+  Future<UpdateInfo?> getAvailableUpdate() async {
     try {
-      print("🔍 Memeriksa update ke: $_jsonUrl");
+      print("🔍 Checking update status: $_jsonUrl");
       final response = await _dio.get(_jsonUrl);
 
       Map<String, dynamic> data;
@@ -26,34 +40,33 @@ class UpdateService {
       }
 
       int serverBuildNumber = int.tryParse(data['buildNumber'].toString()) ?? 0;
-      String serverVersionName = data['versionName'] ?? '';
-      String apkUrl = data['url'] ?? '';
-      String changelog = data['changelog'] ?? '';
 
+      // Logic Versioning (Server > Local)
       bool hasUpdate = await UpdateUtils.isUpdateAvailable(serverBuildNumber);
 
-      if (hasUpdate && context.mounted) {
-        // Jika ada update, tampilkan Dialog Konfirmasi Dulu
-        _showUpdateDialog(context, serverVersionName, changelog, apkUrl);
+      if (hasUpdate) {
+        print("🚀 New version found: ${data['versionName']}");
+        return UpdateInfo(
+          version: data['versionName'] ?? 'Unknown',
+          changelog: data['changelog'] ?? '-',
+          downloadUrl: data['url'] ?? '',
+        );
       } else {
-        print("✅ Aplikasi sudah versi terbaru.");
+        print("✅ App is up to date.");
       }
     } catch (e) {
-      print("❌ Gagal cek update: $e");
+      print("❌ Failed to get update info: $e");
     }
+    return null; // Tidak ada update atau Error
   }
 
-  void _showUpdateDialog(
-    BuildContext context,
-    String version,
-    String log,
-    String downloadUrl,
-  ) {
+  // 2. FUNGSI TAMPILKAN DIALOG (Satu-satunya method dialog)
+  void showUpdateDialog(BuildContext context, UpdateInfo info) {
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: Text("Update Tersedia v$version"),
+        title: Text("Update Tersedia v${info.version}"),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -62,30 +75,35 @@ class UpdateService {
               const Text("Versi baru tersedia. Mohon update aplikasi."),
               const SizedBox(height: 10),
               const Text(
-                "Change Log:",
+                "Apa yang baru:",
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
-              Text(log),
+              const SizedBox(height: 4),
+              Text(info.changelog),
             ],
           ),
         ),
         actions: [
-          // Tombol Nanti (Optional)
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("Nanti"),
+            child: const Text(
+              "Nanti",
+              style: TextStyle(color: Color(0xFF175CFF)),
+            ),
           ),
-          // Tombol Update
           ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue,
+              foregroundColor: Colors.white,
+            ),
             onPressed: () {
               Navigator.pop(context); // Tutup dialog konfirmasi
 
-              // 👇 PANGGIL WIDGET LAMA ANDA DISINI 👇
-              // Widget ini yang akan handle download, permission, dan install.
+              // Panggil Widget Download yang sudah kita fix sebelumnya
               UpdateProgressDialogWidget.show(
                 context,
-                downloadUrl: downloadUrl,
-                version: version,
+                downloadUrl: info.downloadUrl,
+                version: info.version,
               );
             },
             child: const Text("Update Sekarang"),

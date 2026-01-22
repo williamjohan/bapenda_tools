@@ -8,7 +8,6 @@ import 'package:cekreklamemobile/presentation/shared/widgets/custom_modal_widget
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 
-// 👇 UBAH JADI STATEFUL WIDGET
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -17,23 +16,39 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  // 👇 LOGIC OTOMATIS JALAN DISINI
+  // State: Info update (null = gak ada update, not null = ada update)
+  UpdateInfo? _updateInfo;
+
+  // State: Loading check (biar gak flicker)
+  bool _isChecking = true;
+
   @override
   void initState() {
     super.initState();
-
-    // Tunggu sampai UI selesai digambar frame pertama, baru cek update
-    // Agar tidak error "setState called during build"
+    // Cek update otomatis saat halaman dibuka
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _performAutoUpdateCheck();
+      _checkUpdateStatus();
     });
   }
 
-  // Fungsi Pengecekan Otomatis (Silent Check)
-  void _performAutoUpdateCheck() {
-    // Panggil Service yang sudah kita buat di Step 4
+  // Fungsi Utama Pengecekan Update
+  Future<void> _checkUpdateStatus() async {
     final updateService = UpdateService(locator<Dio>());
-    updateService.checkForUpdate(context);
+
+    // Panggil fungsi getAvailableUpdate (Bukan checkForUpdate yang lama)
+    final info = await updateService.getAvailableUpdate();
+
+    if (mounted) {
+      setState(() {
+        _updateInfo = info; // Simpan info update
+        _isChecking = false;
+      });
+
+      // Auto-Show Dialog jika ada update
+      if (_updateInfo != null) {
+        updateService.showUpdateDialog(context, _updateInfo!);
+      }
+    }
   }
 
   @override
@@ -77,7 +92,8 @@ class _HomePageState extends State<HomePage> {
                     ],
                   ),
                 ),
-                // MENU TITIK TIGA
+
+                // 👇 MENU TITIK TIGA (SUDAH DI-OPTIMASI)
                 PopupMenuButton<String>(
                   padding: EdgeInsets.zero,
                   offset: const Offset(-20, 0),
@@ -88,14 +104,71 @@ class _HomePageState extends State<HomePage> {
                     Icons.more_vert_rounded,
                     color: Colors.black45,
                   ),
-                  onSelected: (value) => _handleMenuSelection(context, value),
+
+                  // Logic Klik Menu
+                  onSelected: (value) {
+                    if (value == 'update' && _updateInfo != null) {
+                      // Panggil Dialog Update Manual pakai data _updateInfo
+                      UpdateService(
+                        locator<Dio>(),
+                      ).showUpdateDialog(context, _updateInfo!);
+                    } else if (value == 'report') {
+                      _showReportDialog(context);
+                    }
+                  },
+
                   itemBuilder: (context) => [
-                    _buildPopupItem(
-                      'update',
-                      Icons.system_update_alt_rounded,
-                      "Cek Pembaruan", // Ubah text biar lebih relevan
-                      Colors.blue,
+                    // ITEM MENU UPDATE
+                    PopupMenuItem(
+                      value: 'update',
+                      // Menu aktif HANYA JIKA ada update
+                      enabled: _updateInfo != null,
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.system_update_alt_rounded,
+                            size: 20,
+                            // Warna Icon Abu-abu kalau gak ada update
+                            color: _updateInfo != null
+                                ? Colors.blue
+                                : Colors.grey[400],
+                          ),
+                          const SizedBox(width: 12),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Cek Pembaruan",
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  // Warna Text Abu-abu kalau gak ada update
+                                  color: _updateInfo != null
+                                      ? Colors.black
+                                      : Colors.grey[400],
+                                ),
+                              ),
+                              // Text kecil status
+                              Text(
+                                _isChecking
+                                    ? "Memeriksa..."
+                                    : (_updateInfo != null
+                                          ? "Versi baru tersedia"
+                                          : "Sudah versi terbaru"),
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: _updateInfo != null
+                                      ? Colors.orange
+                                      : Colors.grey,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
+
+                    // ITEM MENU LAPOR (HELPER METHOD LAMA)
                     _buildPopupItem(
                       'report',
                       Icons.bug_report_outlined,
@@ -121,7 +194,6 @@ class _HomePageState extends State<HomePage> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // KELOMPOK KONTEN ATAS
                     Column(
                       children: const [
                         GreetingCard(),
@@ -132,8 +204,6 @@ class _HomePageState extends State<HomePage> {
                         SizedBox(height: 12),
                       ],
                     ),
-
-                    // FOOTER
                     const HomeFooter(),
                   ],
                 ),
@@ -166,44 +236,27 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // 👇 PERBAIKAN LOGIC MANUAL CHECK
-  void _handleMenuSelection(BuildContext context, String value) async {
-    if (value == 'update') {
-      // OPSI A: Gunakan logic otomatis yang sama (Disarankan)
-      // Jadi tombol ini benar-benar ngecek ke server Nextcloud, bukan dummy.
-      final updateService = UpdateService(locator<Dio>());
-
-      // Kita bungkus try-catch untuk memberi feedback kalau ternyata TIDAK ada update
-      // Karena method checkForUpdate di Step 4 sifatnya "Silent" kalau tidak ada update.
-      // (Opsional: Anda bisa modifikasi UpdateService agar mengembalikan status bool)
-
-      // Untuk sekarang, kita panggil saja, nanti Dialog muncul kalau ada update.
-      await updateService.checkForUpdate(context);
-
-      // Note: Kalau Mas ingin menampilkan pesan "Anda sudah versi terbaru",
-      // Mas perlu memodifikasi UpdateService agar mengembalikan nilai Boolean.
-    } else {
-      // ... Logic Lapor Kendala Tetap Sama ...
-      showAppModal(
-        context: context,
-        title: "Lapor Kendala",
-        content: const Text(
-          "Ada kendala teknis? Hubungi tim IT Bapenda Surabaya melalui WhatsApp atau Email.",
-          textAlign: TextAlign.center,
-        ),
-        primaryButton: ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF175CFF),
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(15),
-            ),
+  // Helper untuk Dialog Lapor (Dipisah biar rapi)
+  void _showReportDialog(BuildContext context) {
+    showAppModal(
+      context: context,
+      title: "Lapor Kendala",
+      content: const Text(
+        "Ada kendala teknis? Hubungi tim IT Bapenda Surabaya melalui WhatsApp atau Email.",
+        textAlign: TextAlign.center,
+      ),
+      primaryButton: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF175CFF),
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
           ),
-          onPressed: () => Navigator.pop(context),
-          child: const Text("Hubungi Tim IT"),
         ),
-        showCloseButton: false,
-      );
-    }
+        onPressed: () => Navigator.pop(context),
+        child: const Text("Hubungi Tim IT"),
+      ),
+      showCloseButton: false,
+    );
   }
 }

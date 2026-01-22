@@ -1,7 +1,9 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
 
@@ -11,8 +13,6 @@ android {
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
-        // sourceCompatibility = JavaVersion.VERSION_11
-        // targetCompatibility = JavaVersion.VERSION_11
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
         isCoreLibraryDesugaringEnabled = true
@@ -23,26 +23,33 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.bapenda.cekreklame"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = 34
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
 
+    // 👇 PERBAIKAN: Gunakan Class langsung karena sudah di-import di atas
+    val keystoreProperties = Properties()
+    val keystorePropertiesFile = rootProject.file("key.properties")
+    if (keystorePropertiesFile.exists()) {
+        keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+    }
+
     signingConfigs {
         create("release") {
-            // GitHub Actions akan membuat file ini di folder android/app/
             val keystoreFile = file("upload-keystore.jks")
-            
             storeFile = keystoreFile
-            // Membaca password dari Secret GitHub
+
             storePassword = System.getenv("KEYSTORE_PASSWORD") 
-            keyAlias = System.getenv("KEY_ALIAS")
-            keyPassword = System.getenv("KEY_PASSWORD")
+                ?: keystoreProperties["storePassword"] as String?
+            
+            keyAlias = System.getenv("KEY_ALIAS") 
+                ?: keystoreProperties["keyAlias"] as String?
+            
+            keyPassword = System.getenv("KEY_PASSWORD") 
+                ?: keystoreProperties["keyPassword"] as String?
         }
     }
 

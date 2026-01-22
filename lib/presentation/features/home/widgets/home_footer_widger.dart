@@ -90,7 +90,7 @@ class HomeFooter extends StatelessWidget {
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
-                        "v$version Beta",
+                        "v$version",
                         style: TextStyle(
                           color: Colors.grey.shade600,
                           fontSize: 10,
