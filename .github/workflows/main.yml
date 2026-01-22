@@ -1,0 +1,70 @@
+name: Build Android App
+
+on:
+  push:
+    branches: [ "master" ] # ⚠️ Cek nama branch Mas, apakah 'main' atau 'master'?
+  workflow_dispatch: # Supaya bisa di-klik tombol 'Run' manual di GitHub
+
+jobs:
+  build:
+    name: Build Release
+    runs-on: ubuntu-latest
+
+    steps:
+    # 1. Ambil Source Code dari Repo
+    - uses: actions/checkout@v4
+
+    # 2. Setup Java (Gradle butuh Java)
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'zulu'
+        java-version: '17' # Standar Flutter/Gradle modern
+
+    # 3. Setup Flutter
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        channel: 'stable'
+
+    # 4. Install Dependencies
+    - name: Install Dependencies
+      run: flutter pub get
+
+    # 5. Decode Keystore (PENTING!)
+    # Mengubah Secret Base64 kembali menjadi file fisik 'upload-keystore.jks'
+    # File ditaruh di folder 'android/app/' sesuai settingan build.gradle.kts tadi
+    - name: Decode Keystore
+      run: |
+        echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
+
+    # 6. Build APK Release
+    - name: Build APK
+      env:
+        # Masukkan Password dari Secret ke Environment Variable PC Build
+        KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+      run: flutter build apk --release
+
+    # 7. Build App Bundle (AAB) Release
+    - name: Build App Bundle
+      env:
+        KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+      run: flutter build appbundle --release
+
+    # 8. Simpan Hasil APK agar bisa didownload
+    - name: Upload APK Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: release-apk
+        path: build/app/outputs/flutter-apk/app-release.apk
+
+    # 9. Simpan Hasil AAB agar bisa didownload
+    - name: Upload AAB Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: release-aab
+        path: build/app/outputs/bundle/release/app-release.aab

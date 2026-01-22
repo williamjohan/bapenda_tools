@@ -49,3 +49,6 @@ app.*.map.json
 .env.local
 .env.*.local
 .fvm/
+
+#Secret files
+/android/app/upload-keystore.jks

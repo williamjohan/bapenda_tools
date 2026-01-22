@@ -15,6 +15,7 @@ android {
         // targetCompatibility = JavaVersion.VERSION_11
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
+        isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {
@@ -32,9 +33,22 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        create("release") {
+            // GitHub Actions akan membuat file ini di folder android/app/
+            val keystoreFile = file("upload-keystore.jks")
+            
+            storeFile = keystoreFile
+            // Membaca password dari Secret GitHub
+            storePassword = System.getenv("KEYSTORE_PASSWORD") 
+            keyAlias = System.getenv("KEY_ALIAS")
+            keyPassword = System.getenv("KEY_PASSWORD")
+        }
+    }
+
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
             isShrinkResources = true
             isMinifyEnabled = true
             proguardFiles(
@@ -52,4 +66,5 @@ flutter {
 dependencies {
     implementation("com.google.android.gms:play-services-maps:18.1.0") 
     implementation("androidx.exifinterface:exifinterface:1.3.3")
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }
