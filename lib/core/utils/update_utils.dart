@@ -2,38 +2,28 @@ import 'dart:io';
 import 'package:package_info_plus/package_info_plus.dart';
 
 class UpdateUtils {
-  /// Membandingkan apakah ada versi baru.
-  /// Return true jika [remoteVersion] lebih tinggi dari versi aplikasi saat ini.
-  ///
-  /// Contoh Input:
-  /// local: "1.0.0", remote: "1.0.1" -> True (Update)
-  /// local: "1.0.5", remote: "1.0.2" -> False (Downgrade/Sama)
-  static Future<bool> isUpdateAvailable(String remoteVersion) async {
-    // 1. Cek Platform (Hanya jalan di Android)
+  /// Cek Update berdasarkan Build Number (Integer)
+  /// Contoh: Local build 1, Remote build 2 -> True (Update Available)
+  static Future<bool> isUpdateAvailable(int remoteBuildNumber) async {
+    // 1. Cek Platform (OTA Update package biasanya untuk Android)
     if (!Platform.isAndroid) return false;
 
-    // 2. Dapatkan versi aplikasi saat ini
+    // 2. Dapatkan info aplikasi saat ini
     final packageInfo = await PackageInfo.fromPlatform();
-    final currentVersion = packageInfo.version; // Misal "1.0.0"
 
-    // 3. Logic Pembanding Sederhana (Split by dot)
-    // Asumsi format Semantic Versioning (Major.Minor.Patch) -> "1.0.2"
-    try {
-      List<int> currentV = currentVersion.split('.').map(int.parse).toList();
-      List<int> remoteV = remoteVersion.split('.').map(int.parse).toList();
+    // Parse build number lokal ke integer
+    // (di pubspec.yaml: 1.0.0+1 -> buildNumber adalah 1)
+    int currentBuildNumber = int.parse(packageInfo.buildNumber);
 
-      // Bandingkan per angka (Major, lalu Minor, lalu Patch)
-      for (int i = 0; i < 3; i++) {
-        // Jika remote lebih besar, berarti ada update
-        if (remoteV[i] > currentV[i]) return true;
-        // Jika remote lebih kecil, berarti aplikasi kita lebih baru (dev version)
-        if (remoteV[i] < currentV[i]) return false;
-      }
-      // Jika sampai sini berarti versinya SAMA PERSIS
-      return false;
-    } catch (e) {
-      // Jika format versi kacau (bukan angka), anggap tidak ada update biar aman
-      return false;
+    print(
+      "Cek Versi: Local($currentBuildNumber) vs Remote($remoteBuildNumber)",
+    );
+
+    // 3. Bandingkan Integer
+    if (remoteBuildNumber > currentBuildNumber) {
+      return true; // Ada update
     }
+
+    return false; // Sudah paling baru
   }
 }

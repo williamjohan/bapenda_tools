@@ -1,9 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
 <paths>
-    <external-files-path
-        name="ota_external"
-        path="Download/ota/" />
-
-    <files-path
-        name="ota_internal"
-        path="ota/" />
+    <files-path name="internal_files" path="."/>
+    
+    <external-path name="external_files" path="."/>
 </paths>

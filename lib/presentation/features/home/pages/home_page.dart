@@ -1,14 +1,40 @@
+import 'package:cekreklamemobile/core/services/update_service.dart';
+import 'package:cekreklamemobile/di.dart';
 import 'package:cekreklamemobile/presentation/features/home/widgets/capture_card_widget.dart';
 import 'package:cekreklamemobile/presentation/features/home/widgets/greeting_card_widget.dart';
 import 'package:cekreklamemobile/presentation/features/home/widgets/cek_reklame_card_widget.dart';
 import 'package:cekreklamemobile/presentation/features/home/widgets/home_footer_widger.dart';
 import 'package:cekreklamemobile/presentation/shared/widgets/custom_modal_widget.dart';
-import 'package:cekreklamemobile/presentation/shared/widgets/update_progress_dialog_widget.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 
-class HomePage extends StatelessWidget {
+// 👇 UBAH JADI STATEFUL WIDGET
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  // 👇 LOGIC OTOMATIS JALAN DISINI
+  @override
+  void initState() {
+    super.initState();
+
+    // Tunggu sampai UI selesai digambar frame pertama, baru cek update
+    // Agar tidak error "setState called during build"
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _performAutoUpdateCheck();
+    });
+  }
+
+  // Fungsi Pengecekan Otomatis (Silent Check)
+  void _performAutoUpdateCheck() {
+    // Panggil Service yang sudah kita buat di Step 4
+    final updateService = UpdateService(locator<Dio>());
+    updateService.checkForUpdate(context);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -16,7 +42,6 @@ class HomePage extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6FA),
-      // APP BAR TETAP SAMA
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(80),
         child: SafeArea(
@@ -68,7 +93,7 @@ class HomePage extends StatelessWidget {
                     _buildPopupItem(
                       'update',
                       Icons.system_update_alt_rounded,
-                      "Perbarui Aplikasi",
+                      "Cek Pembaruan", // Ubah text biar lebih relevan
                       Colors.blue,
                     ),
                     _buildPopupItem(
@@ -85,18 +110,15 @@ class HomePage extends StatelessWidget {
         ),
       ),
 
-      // 🚀 INI PERBAIKAN UTAMANYA (STICKY FOOTER LOGIC)
       body: LayoutBuilder(
         builder: (context, constraints) {
           return SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
             child: ConstrainedBox(
-              // Paksa tinggi minimal setinggi layar (viewport)
               constraints: BoxConstraints(minHeight: constraints.maxHeight),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Column(
-                  // SpaceBetween akan mendorong Footer ke bawah
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     // KELOMPOK KONTEN ATAS
@@ -111,7 +133,7 @@ class HomePage extends StatelessWidget {
                       ],
                     ),
 
-                    // FOOTER (Otomatis terdorong ke paling bawah)
+                    // FOOTER
                     const HomeFooter(),
                   ],
                 ),
@@ -144,43 +166,24 @@ class HomePage extends StatelessWidget {
     );
   }
 
+  // 👇 PERBAIKAN LOGIC MANUAL CHECK
   void _handleMenuSelection(BuildContext context, String value) async {
-    // ... Logika Handle Menu sama seperti sebelumnya ...
     if (value == 'update') {
-      final PackageInfo packageInfo = await PackageInfo.fromPlatform();
-      final String currentVersion = packageInfo.version;
+      // OPSI A: Gunakan logic otomatis yang sama (Disarankan)
+      // Jadi tombol ini benar-benar ngecek ke server Nextcloud, bukan dummy.
+      final updateService = UpdateService(locator<Dio>());
 
-      if (context.mounted) {
-        showAppModal(
-          context: context,
-          title: "Pembaruan Aplikasi",
-          content: Text(
-            "Versi Anda sudah yang terbaru (Beta $currentVersion). Kami akan memberi tahu jika ada versi baru.",
-            textAlign: TextAlign.center,
-          ),
-          primaryButton: ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF175CFF),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(15),
-              ),
-            ),
-            onPressed: () {
-              Navigator.pop(context);
-              UpdateProgressDialogWidget.show(
-                context, // Tidak perlu named parameter context lagi
-                downloadUrl:
-                    "https://telegram.org/dl/android/apk", // Contoh URL
-                version: "Test Update",
-              );
-            },
-            child: const Text("Tes Download"),
-          ),
-          showCloseButton: false,
-        );
-      }
+      // Kita bungkus try-catch untuk memberi feedback kalau ternyata TIDAK ada update
+      // Karena method checkForUpdate di Step 4 sifatnya "Silent" kalau tidak ada update.
+      // (Opsional: Anda bisa modifikasi UpdateService agar mengembalikan status bool)
+
+      // Untuk sekarang, kita panggil saja, nanti Dialog muncul kalau ada update.
+      await updateService.checkForUpdate(context);
+
+      // Note: Kalau Mas ingin menampilkan pesan "Anda sudah versi terbaru",
+      // Mas perlu memodifikasi UpdateService agar mengembalikan nilai Boolean.
     } else {
+      // ... Logic Lapor Kendala Tetap Sama ...
       showAppModal(
         context: context,
         title: "Lapor Kendala",
