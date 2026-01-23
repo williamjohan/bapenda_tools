@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:cekreklamemobile/core/services/map_service.dart';
 import 'package:cekreklamemobile/domain/usecases/post_report_usecase.dart';
-import 'package:cekreklamemobile/presentation/features/result/bloc/check_result_cubit.dart';
+import 'package:cekreklamemobile/presentation/features/result/cubit/check_result_cubit.dart';
 import 'package:chucker_flutter/chucker_flutter.dart';
 import 'package:dio/dio.dart';
 import 'package:dio/io.dart';

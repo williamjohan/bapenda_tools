@@ -1,5 +1,5 @@
 import 'package:cekreklamemobile/core/constants/app_constants.dart';
-import 'package:cekreklamemobile/presentation/features/result/bloc/check_result_cubit.dart';
+import 'package:cekreklamemobile/presentation/features/result/cubit/check_result_cubit.dart';
 import 'package:cekreklamemobile/presentation/shared/widgets/custom_modal_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

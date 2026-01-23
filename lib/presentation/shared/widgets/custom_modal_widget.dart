@@ -121,7 +121,7 @@ Future<void> showConnectionErrorModal(
     topIcon: Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.red.withOpacity(0.1),
+        color: Colors.red.withValues(alpha: 0.1),
         shape: BoxShape.circle,
       ),
       child: const Icon(Icons.wifi_off_rounded, size: 40, color: Colors.red),

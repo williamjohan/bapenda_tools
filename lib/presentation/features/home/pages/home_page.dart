@@ -4,6 +4,7 @@ import 'package:cekreklamemobile/presentation/features/home/widgets/capture_card
 import 'package:cekreklamemobile/presentation/features/home/widgets/greeting_card_widget.dart';
 import 'package:cekreklamemobile/presentation/features/home/widgets/cek_reklame_card_widget.dart';
 import 'package:cekreklamemobile/presentation/features/home/widgets/home_footer_widger.dart';
+import 'package:cekreklamemobile/presentation/features/update/update_dialog.dart';
 import 'package:cekreklamemobile/presentation/shared/widgets/custom_modal_widget.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -36,7 +37,7 @@ class _HomePageState extends State<HomePage> {
 
       // Auto-Show Dialog jika ada update
       if (_updateInfo != null) {
-        updateService.showUpdateDialog(context, _updateInfo!);
+        showUpdateDialog(context, _updateInfo!);
       }
     }
   }
@@ -108,9 +109,7 @@ class _HomePageState extends State<HomePage> {
                   onSelected: (value) {
                     if (value == 'update' && _updateInfo != null) {
                       // Panggil Dialog Update Manual pakai data _updateInfo
-                      UpdateService(
-                        locator<Dio>(),
-                      ).showUpdateDialog(context, _updateInfo!);
+                      showUpdateDialog(context, _updateInfo!);
                     } else if (value == 'report') {
                       _showReportDialog(context);
                     }

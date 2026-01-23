@@ -1,6 +1,6 @@
 import 'package:cekreklamemobile/core/constants/app_colors.dart';
-import 'package:cekreklamemobile/presentation/features/result/bloc/check_result_cubit.dart';
-import 'package:cekreklamemobile/presentation/features/result/bloc/check_result_state.dart';
+import 'package:cekreklamemobile/presentation/features/result/cubit/check_result_cubit.dart';
+import 'package:cekreklamemobile/presentation/features/result/cubit/check_result_state.dart';
 import 'package:cekreklamemobile/presentation/features/result/widgets/error_state_widget.dart';
 import 'package:cekreklamemobile/presentation/features/result/widgets/no_result_widget.dart';
 import 'package:cekreklamemobile/presentation/features/result/widgets/result_list_view_widget.dart';

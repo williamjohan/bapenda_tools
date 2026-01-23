@@ -1,8 +1,7 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../utils/update_utils.dart';
-import '../../presentation/shared/widgets/update_progress_dialog_widget.dart';
 
 // Model Data Update
 class UpdateInfo {
@@ -20,17 +19,16 @@ class UpdateInfo {
 class UpdateService {
   final Dio _dio;
 
-  // URL JSON
-  final String _jsonUrl =
-      "https://drivebapenda.surabaya.go.id/s/Q7JqkbnpzgL5iMW/download";
-
   UpdateService(this._dio);
 
   // 1. FUNGSI CEK UPDATE (Mengembalikan Data atau Null)
   Future<UpdateInfo?> getAvailableUpdate() async {
     try {
-      print("🔍 Checking update status: $_jsonUrl");
-      final response = await _dio.get(_jsonUrl);
+      // final jsonUrl = dotenv.env['UPDATE_JSON_URL'] ?? '';
+      final jsonTestingUrl = dotenv.env['UPDATE_JSON_TESTING_URL'] ?? '';
+
+      print("🔍 Checking update status: $jsonTestingUrl");
+      final response = await _dio.get(jsonTestingUrl);
 
       Map<String, dynamic> data;
       if (response.data is String) {
@@ -58,70 +56,5 @@ class UpdateService {
       print("❌ Failed to get update info: $e");
     }
     return null; // Tidak ada update atau Error
-  }
-
-  // 2. FUNGSI TAMPILKAN DIALOG (Satu-satunya method dialog)
-  void showUpdateDialog(BuildContext context, UpdateInfo info) {
-    showDialog(
-      context: context,
-      barrierDismissible: true,
-      builder: (context) => AlertDialog(
-        title: Text("Update Tersedia v${info.version}"),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text("Versi baru tersedia. Mohon update aplikasi."),
-              const SizedBox(height: 10),
-              const Text(
-                "Apa yang baru:",
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 4),
-              Text(info.changelog),
-            ],
-          ),
-        ),
-        actions: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text(
-                  "Nanti",
-                  style: TextStyle(color: Color(0xFF175CFF)),
-                ),
-              ),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8.0),
-                  ),
-                ),
-                onPressed: () {
-                  Navigator.pop(context);
-                  UpdateProgressDialogWidget.show(
-                    context,
-                    downloadUrl: info.downloadUrl,
-                    version: info.version,
-                  );
-                },
-                child: Padding(
-                  padding: const EdgeInsets.all(5.0),
-                  child: const Text(
-                    "Update \nSekarang",
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
   }
 }

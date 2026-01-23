@@ -3,7 +3,7 @@ import 'package:cekreklamemobile/core/constants/app_constants.dart';
 import 'package:cekreklamemobile/core/utils/image_utils.dart';
 import 'package:cekreklamemobile/domain/value_objects/billboard_status.dart';
 import 'package:cekreklamemobile/domain/entities/billboard_entity.dart';
-import 'package:cekreklamemobile/presentation/features/result/bloc/check_result_cubit.dart';
+import 'package:cekreklamemobile/presentation/features/result/cubit/check_result_cubit.dart';
 import 'package:cekreklamemobile/presentation/features/result/widgets/image_preview_page.dart';
 import 'package:cekreklamemobile/presentation/shared/widgets/custom_modal_widget.dart';
 import 'package:flutter/material.dart';
