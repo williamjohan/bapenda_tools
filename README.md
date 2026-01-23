@@ -27,29 +27,32 @@ Proyek ini menggunakan arsitektur **Clean Architecture** yang diimplementasikan 
 
 ### Struktur Layer Utama
 
-| Layer | Lokasi | Tanggung Jawab | Komponen Kunci |
-| :--- | :--- | :--- | :--- |
-| **Domain** | `lib/domain/` | Inti Bisnis. Aturan dan Objek. | **Entities** (`BillboardEntity`), **Use Cases**, **Repositories** (Contracts). |
-| **Data** | `lib/data/` | Data Eksternal. Mengambil dan Menyimpan. | **Data Sources** (API/Remote), **Models** (JSON Mappers), **Repository Impl**. |
-| **Presentation** | `lib/presentation/` | UI dan State Management. | **Cubit** (Business Logic), **Views** (Stateless Widgets), Shared Widgets. |
-| **Core** | `lib/core/` | Global Utilities (Non-Bisnis). | **Services** (`MapService`), **Utils** (`date_utils`, `file_copy_utils`). |
-| **Routes** | `lib/routes/` | Navigasi & Alur Halaman. | **Constants** (`AppRoutes`), **GoRouter Config** (`appRouter`). |
+| Layer | Lokasi | Tanggung Jawab | 
+| :--- | :--- | :--- | 
+| **Domain** | `lib/domain/` | *Business Logic* murni (Entities, UseCases, Repository Interfaces). |
+| **Data** | `lib/data/` | Implementasi data (API Calls, Models, Repository Impl). |
+| **Presentation** | `lib/presentation/` | UI (Pages, Widgets) & State Management (BLoC/Cubit). |
+| **Core** | `lib/core/` | Service global (`UpdateService`, `NetworkService`), DI, & Utils. |
+| **Routes** | `lib/routes/` | Navigasi & Alur Halaman. **Constants** (`AppRoutes`), **GoRouter Config** (`appRouter`). |
 
 ### State Management
 
-Kami menggunakan **BLOC/Cubit** (`flutter_bloc`) untuk mengelola *state* yang kompleks (seperti *Loading*, *Loaded List*, *API Error*) di layar `CheckResultScreen`.
+Kami menggunakan **BLOC/Cubit** (`flutter_bloc`) untuk mengelola *state* yang kompleks dan `get_it` digunakan untuk memisahkan *dependency* antar layer.
+
 
 ---
 
 ## 📦 Tech Stack & Dependencies Krusial<a name="tech-stack--dependencies-krusial"></a>
 
-| Kategori | Package | Keterangan |
+| Kategori | Package Utama | Fungsi |
 | :--- | :--- | :--- |
-| **Networking** | `dio` | HTTP Client untuk *Request* API (digunakan untuk *Multipart/Form-Data* upload). |
-| **State/DI** | `flutter_bloc`, `get_it` | **Cubit** untuk *state management*; **GetIt** sebagai *Service Locator* untuk *Dependency Injection* yang aman. |
-| **Routing** | `go_router` | Navigasi Deklaratif yang aman. |
-| **Hardware** | `camera`, `geolocator` | Akses Kamera dan Layanan GPS. |
-| **Image Processing** | `image_cropper` | *Native UI* untuk *cropping* dan kompresi *payload* foto. |
+| **Networking** | `dio` | HTTP Client dengan SSL pinning bypass (untuk server internal) & interceptors. |
+| **Update System** | `ota_update`, `package_info_plus` | Menangani download & install APK, serta pengecekan versi aplikasi. |
+| **Utilities** | `connectivity_plus` | Monitoring status internet realtime untuk UX yang lebih tangguh. |
+| **Routing** | `go_router` | Navigasi deklaratif. |
+| **Hardware** | `camera`, `geolocator` | Akses sensor perangkat. |
+| **UI Tools** | `image_cropper` | Native cropping & compression. |
+| **Config** | `flutter_dotenv` | Manajemen Environment Variables. |
 | **Security/Utils** | `flutter_dotenv`, `shared_preferences` | Pengamanan API Key dan *flag* `isFirstLaunch`. |
 
 ---
@@ -155,7 +158,7 @@ Proyek ini adalah **proyek privat** dan hak cipta dimiliki oleh:
 
 | Nama | Role | Kontak |
 |------|------|--------|
-| William Johan | Mobile App Developer | williamjohanp@gmail.com |
+| William J. Pakpahan | Mobile App Developer | williamjohanp@gmail.com |
 
 
 ***
