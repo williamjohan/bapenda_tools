@@ -23,10 +23,9 @@ class CustomModal extends StatelessWidget {
     return AlertDialog(
       contentPadding: EdgeInsets.zero,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0)),
-
       content: Container(
         width: MediaQuery.of(context).size.width * 0.85,
-        padding: const EdgeInsets.all(10.0),
+        padding: const EdgeInsets.all(20.0),
         decoration: BoxDecoration(
           color: backgroundColor,
           borderRadius: BorderRadius.circular(16.0),
@@ -35,25 +34,26 @@ class CustomModal extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Ikon di bagian atas (jika ada)
-            if (topIcon != null) ...[topIcon!, const SizedBox(height: 15)],
-
-            // Close Button di kanan atas
+            // 1. Close Button (Floating)
             if (showCloseButton)
               Align(
                 alignment: Alignment.topRight,
-                child: IconButton(
-                  icon: const Icon(Icons.close, color: Colors.grey),
-                  onPressed: () => Navigator.pop(context),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
+                child: GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: const Icon(Icons.close, color: Colors.grey),
                 ),
               ),
 
-            // Judul (jika ada)
+            // 2. Ikon Atas (Safe Check)
+            if (topIcon != null) ...[
+              topIcon!, // Aman karena di dalam if
+              const SizedBox(height: 15),
+            ],
+
+            // 3. Judul (Safe Check)
             if (title != null) ...[
               Text(
-                title!,
+                title!, // Aman karena di dalam if
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 18,
@@ -61,25 +61,18 @@ class CustomModal extends StatelessWidget {
                   color: Theme.of(context).colorScheme.primary,
                 ),
               ),
-              const SizedBox(height: 10), // Jarak setelah judul
-              const Divider(
-                height: 10,
-                thickness: 1,
-              ), // Divider setelah judul jika ada
               const SizedBox(height: 10),
-            ] else if (topIcon == null && showCloseButton == false) ...[
-              // Jika tidak ada title dan tidak ada icon, dan tidak ada tombol close, mungkin tidak perlu divider
-              // Anda bisa atur logic divider di sini sesuai kebutuhan
+              const Divider(height: 10, thickness: 1),
               const SizedBox(height: 10),
             ],
 
-            // Isi Konten Utama
+            // 4. Konten
             SingleChildScrollView(child: content),
 
-            // Primary Action Button (jika ada)
+            // 5. Primary Button (Safe Check)
             if (primaryButton != null) ...[
               const SizedBox(height: 20),
-              SizedBox(width: double.infinity, child: primaryButton!),
+              SizedBox(width: double.infinity, child: primaryButton!), // Aman
             ],
           ],
         ),
@@ -88,26 +81,82 @@ class CustomModal extends StatelessWidget {
   }
 }
 
-void showAppModal({
+// === HELPER FUNCTIONS ===
+
+Future<void> showAppModal({
   required BuildContext context,
-  String? title,
+  String? title, // Boleh Null
   required Widget content,
   Widget? primaryButton,
   bool isDismissible = false,
   Widget? topIcon,
   bool showCloseButton = true,
 }) {
-  showDialog(
+  return showDialog(
     context: context,
     barrierDismissible: isDismissible,
     builder: (context) {
       return CustomModal(
-        title: title,
+        title: title, // ✅ Jangan pakai title! disini
         content: content,
         primaryButton: primaryButton,
         topIcon: topIcon,
         showCloseButton: showCloseButton,
       );
     },
+  );
+}
+
+// File: custom_modal_widget.dart
+
+// Ubah return type jadi Future<void>
+Future<void> showConnectionErrorModal(
+  BuildContext context, {
+  VoidCallback? onRetry,
+}) {
+  // Tambahkan return di sini 👇
+  return showAppModal(
+    context: context,
+    isDismissible: true,
+    topIcon: Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.red.withOpacity(0.1),
+        shape: BoxShape.circle,
+      ),
+      child: const Icon(Icons.wifi_off_rounded, size: 40, color: Colors.red),
+    ),
+    content: Column(
+      // Pastikan konten rapi
+      children: [
+        const Text(
+          "Koneksi Terputus",
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          "Gagal mengunduh pembaruan. Pastikan koneksi internet Anda stabil, lalu coba lagi.",
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 14, color: Colors.black54),
+        ),
+      ],
+    ),
+    primaryButton: ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.redAccent,
+        foregroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+      onPressed: () {
+        if (context.mounted) {
+          Navigator.of(context).maybePop();
+        }
+        if (onRetry != null) {
+          onRetry();
+        }
+      },
+      child: const Text("Coba Lagi"),
+    ),
+    showCloseButton: false,
   );
 }

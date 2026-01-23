@@ -22,16 +22,6 @@ class _HomePageState extends State<HomePage> {
   // State: Loading check (biar gak flicker)
   bool _isChecking = true;
 
-  @override
-  void initState() {
-    super.initState();
-    // Cek update otomatis saat halaman dibuka
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkUpdateStatus();
-    });
-  }
-
-  // Fungsi Utama Pengecekan Update
   Future<void> _checkUpdateStatus() async {
     final updateService = UpdateService(locator<Dio>());
 
@@ -49,6 +39,15 @@ class _HomePageState extends State<HomePage> {
         updateService.showUpdateDialog(context, _updateInfo!);
       }
     }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // Cek update otomatis saat halaman dibuka
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkUpdateStatus();
+    });
   }
 
   @override

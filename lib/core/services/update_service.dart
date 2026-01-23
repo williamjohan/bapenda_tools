@@ -20,9 +20,9 @@ class UpdateInfo {
 class UpdateService {
   final Dio _dio;
 
-  // URL JSON (Pastikan Direct Download / Raw)
+  // URL JSON
   final String _jsonUrl =
-      "https://drivebapenda.surabaya.go.id/s/JHs8ksmt2HqxoRJ/download";
+      "https://drivebapenda.surabaya.go.id/s/Q7JqkbnpzgL5iMW/download";
 
   UpdateService(this._dio);
 
@@ -64,7 +64,7 @@ class UpdateService {
   void showUpdateDialog(BuildContext context, UpdateInfo info) {
     showDialog(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: true,
       builder: (context) => AlertDialog(
         title: Text("Update Tersedia v${info.version}"),
         content: SingleChildScrollView(
@@ -84,29 +84,41 @@ class UpdateService {
           ),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              "Nanti",
-              style: TextStyle(color: Color(0xFF175CFF)),
-            ),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue,
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () {
-              Navigator.pop(context); // Tutup dialog konfirmasi
-
-              // Panggil Widget Download yang sudah kita fix sebelumnya
-              UpdateProgressDialogWidget.show(
-                context,
-                downloadUrl: info.downloadUrl,
-                version: info.version,
-              );
-            },
-            child: const Text("Update Sekarang"),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text(
+                  "Nanti",
+                  style: TextStyle(color: Color(0xFF175CFF)),
+                ),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8.0),
+                  ),
+                ),
+                onPressed: () {
+                  Navigator.pop(context);
+                  UpdateProgressDialogWidget.show(
+                    context,
+                    downloadUrl: info.downloadUrl,
+                    version: info.version,
+                  );
+                },
+                child: Padding(
+                  padding: const EdgeInsets.all(5.0),
+                  child: const Text(
+                    "Update \nSekarang",
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),

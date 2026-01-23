@@ -42,6 +42,7 @@ void setupLocator() {
           (X509Certificate cert, String host, int port) {
             final baseUrl = dotenv.env['BASE_URL'] ?? '';
             if (baseUrl.contains(host)) return true;
+            if (host.contains("drivebapenda.surabaya.go.id")) return true;
             return false;
           };
       return client;

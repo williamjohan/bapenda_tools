@@ -1,72 +1,62 @@
-name: Build Android App
+name: Build Release APK
 
+# 1. TRIGGER (KAPAN)
+# Robot hanya jalan kalau Mas bikin "Release" baru di halaman GitHub
 on:
-  push:
-    branches: [ "master" ]
-  workflow_dispatch:
+  release:
+    types: [published]
 
+# 2. JOBS (TUGAS)
 jobs:
-  build:
-    name: Build Release
+  build_and_release:
+    name: Build APK Release
     runs-on: ubuntu-latest
 
+    # 3. STEPS (LANGKAH-LANGKAH)
     steps:
-    # 1. Ambil Kodingan
-    - uses: actions/checkout@v4
+      # Langkah A: Ambil kodingan dari repo Mas
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    # 2. [BARU] Buat file .env dari Secret
-    # Ini solusi error "No file or variants found for asset: .env"
-    - name: Create .env file
-      run: echo "${{ secrets.ENV_FILE }}" > .env
+      # Langkah B: Siapkan Java (Android butuh Java)
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
 
-    # 3. Setup Java
-    - name: Setup Java
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'zulu'
-        java-version: '17'
+      # Langkah C: Siapkan Flutter
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.22.0' 
+          channel: 'stable'
 
-    # 4. Setup Flutter
-    - name: Setup Flutter
-      uses: subosito/flutter-action@v2
-      with:
-        channel: 'stable'
+      # Langkah D: Ambil Library (pub get)
+      - name: Get Dependencies
+        run: flutter pub get
 
-    # 5. Install Dependencies
-    - name: Install Dependencies
-      run: flutter pub get
+      # Langkah E: CETAK ULANG Keystore dari Secrets 
+      - name: Decode Keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
 
-    # 6. Decode Keystore
-    - name: Decode Keystore
-      run: |
-        echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
+      # Langkah F: BUAT FILE key.properties dari Secrets
+      # Biar Gradle bisa baca passwordnya
+      - name: Create key.properties
+        run: |
+          echo "storePassword=${{ secrets.STORE_PASSWORD }}" > android/key.properties
+          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
+          echo "keyAlias=upload" >> android/key.properties
+          echo "storeFile=../app/upload-keystore.jks" >> android/key.properties
 
-    # 7. Build APK Release
-    - name: Build APK
-      env:
-        KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-        KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-        KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-      run: flutter build apk --release
+      # Langkah G: Build APK Release
+      - name: Build APK
+        run: flutter build apk --release
 
-    # 8. Build App Bundle
-    - name: Build App Bundle
-      env:
-        KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-        KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-        KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-      run: flutter build appbundle --release
-
-    # 9. Upload APK
-    - name: Upload APK Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: release-apk
-        path: build/app/outputs/flutter-apk/app-release.apk
-
-    # 10. Upload AAB
-    - name: Upload AAB Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: release-aab
-        path: build/app/outputs/bundle/release/app-release.aab
+      # Langkah H: Upload APK ke Halaman Release GitHub
+      - name: Upload APK to Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: build/app/outputs/flutter-apk/app-release.apk
