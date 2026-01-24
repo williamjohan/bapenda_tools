@@ -2,10 +2,12 @@ import 'package:cekreklamemobile/domain/entities/billboard_entity.dart';
 import 'package:cekreklamemobile/presentation/features/detail/pages/detail_page.dart';
 import 'package:cekreklamemobile/presentation/features/home/pages/home_page.dart';
 import 'package:cekreklamemobile/presentation/features/result/pages/check_result_page.dart';
-import 'package:cekreklamemobile/splashscreen.dart';
+import 'package:cekreklamemobile/presentation/features/splashscreen/cubit/splash_cubit.dart';
+import 'package:cekreklamemobile/presentation/features/splashscreen/pages/splash_page.dart';
 import 'package:chucker_flutter/chucker_flutter.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'app_routes.dart';
 import '../presentation/features/onboarding/pages/onboarding_page.dart';
@@ -20,7 +22,12 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: AppRoutes.splashscreen,
       name: AppRoutes.splashscreen,
-      builder: (context, state) => const SplashScreen(),
+      builder: (context, state) {
+        return BlocProvider(
+          create: (_) => SplashCubit()..start(),
+          child: const SplashScreen(),
+        );
+      },
     ),
 
     GoRoute(

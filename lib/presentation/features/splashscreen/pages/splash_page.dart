@@ -1,9 +1,10 @@
-// lib/presentation/features/splash/pages/splash_screen.dart
+import 'package:cekreklamemobile/presentation/features/splashscreen/cubit/splash_cubit.dart';
+import 'package:cekreklamemobile/presentation/features/splashscreen/cubit/splash_state.dart';
 import 'package:cekreklamemobile/routes/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -14,9 +15,9 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _fadeAnimation;
-  late Animation<Offset> _slideAnimation;
+  late final AnimationController _controller;
+  late final Animation<double> _fadeAnimation;
+  late final Animation<Offset> _slideAnimation;
 
   @override
   void initState() {
@@ -25,35 +26,38 @@ class _SplashScreenState extends State<SplashScreen>
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1500),
-    );
+    )..forward();
 
-    _fadeAnimation = Tween<double>(
+    _fadeAnimation = Tween(
       begin: 0.0,
       end: 1.0,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
 
-    _slideAnimation = Tween<Offset>(
+    _slideAnimation = Tween(
       begin: const Offset(0, 0.1),
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
 
-    _controller.forward();
-
-    _checkNavigation();
+    context.read<SplashCubit>().start();
   }
 
-  Future<void> _checkNavigation() async {
-    final prefs = await SharedPreferences.getInstance();
-    final bool isFirstLaunch = prefs.getBool('isFirstLaunch') ?? true;
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<SplashCubit, SplashState>(
+      listener: (context, state) {
+        if (state is SplashNavigateOnboarding) {
+          context.go(AppRoutes.onboarding);
+        }
 
-    await Future.delayed(const Duration(seconds: 3));
-    if (!mounted) return;
-
-    if (isFirstLaunch) {
-      context.go(AppRoutes.onboarding);
-    } else {
-      context.go(AppRoutes.home);
-    }
+        if (state is SplashNavigateHome) {
+          context.go(AppRoutes.home);
+        }
+      },
+      child: _SplashView(
+        fadeAnimation: _fadeAnimation,
+        slideAnimation: _slideAnimation,
+      ),
+    );
   }
 
   @override
@@ -61,6 +65,16 @@ class _SplashScreenState extends State<SplashScreen>
     _controller.dispose();
     super.dispose();
   }
+}
+
+class _SplashView extends StatelessWidget {
+  final Animation<double> fadeAnimation;
+  final Animation<Offset> slideAnimation;
+
+  const _SplashView({
+    required this.fadeAnimation,
+    required this.slideAnimation,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -70,19 +84,15 @@ class _SplashScreenState extends State<SplashScreen>
         statusBarIconBrightness: Brightness.dark,
       ),
       child: Scaffold(
-        extendBodyBehindAppBar: true,
         backgroundColor: Colors.white,
         body: Center(
           child: FadeTransition(
-            opacity: _fadeAnimation,
+            opacity: fadeAnimation,
             child: SlideTransition(
-              position: _slideAnimation,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Image.asset('assets/images/city_of_heroes.png', height: 175),
-                  const SizedBox(height: 16),
-                ],
+              position: slideAnimation,
+              child: Image.asset(
+                'assets/images/city_of_heroes.png',
+                height: 175,
               ),
             ),
           ),
