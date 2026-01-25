@@ -3,7 +3,7 @@ import 'package:cekreklamemobile/di.dart';
 import 'package:cekreklamemobile/presentation/features/home/widgets/capture_card_widget.dart';
 import 'package:cekreklamemobile/presentation/features/home/widgets/greeting_card_widget.dart';
 import 'package:cekreklamemobile/presentation/features/home/widgets/cek_reklame_terdekat_widget.dart';
-import 'package:cekreklamemobile/presentation/features/home/widgets/home_footer_widger.dart';
+import 'package:cekreklamemobile/presentation/features/home/widgets/home_footer_widget.dart';
 import 'package:cekreklamemobile/presentation/features/update/update_dialog.dart';
 import 'package:cekreklamemobile/presentation/shared/widgets/custom_modal_widget.dart';
 import 'package:dio/dio.dart';

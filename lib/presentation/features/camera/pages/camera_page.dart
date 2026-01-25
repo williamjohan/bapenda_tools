@@ -1,522 +1,152 @@
-import 'dart:async';
-import 'dart:developer';
-import 'dart:io';
-import 'package:cekreklamemobile/core/utils/file_cache_utils.dart';
-import 'package:cekreklamemobile/presentation/features/camera/widgets/processing_overlay_widget.dart';
+import 'package:camera/camera.dart';
+import 'package:cekreklamemobile/presentation/features/camera/widgets/capture_action_bar.dart';
+import 'package:cekreklamemobile/presentation/features/camera/widgets/processing_overlay_widget.dart'; // Jangan lupa import ini
 import 'package:cekreklamemobile/routes/app_routes.dart';
 import 'package:flutter/material.dart';
-import 'package:camera/camera.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_cropper/image_cropper.dart';
+import 'package:permission_handler/permission_handler.dart';
+import '../cubit/camera_cubit.dart';
+import '../cubit/camera_state.dart';
+import '../widgets/camera_error_view.dart';
+import '../widgets/camera_view.dart';
 
-class CaptureScreen extends StatefulWidget {
-  const CaptureScreen({super.key});
+class CameraPage extends StatefulWidget {
+  const CameraPage({super.key});
 
   @override
-  State<CaptureScreen> createState() => _CaptureScreenState();
+  State<CameraPage> createState() => _CameraPageState();
 }
 
-const String staticTestAssetPath = 'assets/images/guardian_reklame.jpg';
-
-class _CaptureScreenState extends State<CaptureScreen>
-    with WidgetsBindingObserver {
-  CameraController? controller;
-  bool _isCameraInitialized = false;
-  CroppedFile? _capturedPhoto;
-  FlashMode _currentFlashMode = FlashMode.off;
-  Offset? _focusPoint;
-  bool _isCapturing = false;
-  bool _isProcessingData = false;
-  bool _isShutterLocked = false;
-  double _minZoomLevel = 1.0;
-  double _maxZoomLevel = 1.0;
-  double _currentZoomLevel = 1.0;
-  double _baseZoomLevel = 1.0;
-  String _loadingMessage = "";
-
-  void _handleScaleStart(ScaleStartDetails details) {
-    _baseZoomLevel = _currentZoomLevel;
-  }
-
-  void _handleScaleUpdate(ScaleUpdateDetails details) async {
-    if (!controller!.value.isInitialized || details.scale == 1.0) return;
-
-    // Hitung zoom baru (base zoom * scale factor)
-    final double newZoom = (_baseZoomLevel * details.scale).clamp(
-      _minZoomLevel,
-      _maxZoomLevel,
-    ); // Pastikan dalam batas min/max
-
-    await controller!.setZoomLevel(newZoom);
-
-    setState(() {
-      _currentZoomLevel = newZoom;
-    });
-  }
-
-  void _handleTapToFocus(TapDownDetails details) async {
-    if (!controller!.value.isInitialized || _capturedPhoto != null) return;
-
-    // Konversi koordinat layar (pixel) ke koordinat kamera (0.0 hingga 1.0)
-    final size = context.size;
-    if (size == null) return;
-
-    final x = details.localPosition.dx / size.width;
-    final y = details.localPosition.dy / size.height;
-
-    final focusPoint = Offset(x, y);
-
-    try {
-      // Atur fokus dan exposure
-      await controller!.setFocusPoint(focusPoint);
-      await controller!.setExposurePoint(focusPoint);
-
-      setState(() {
-        _focusPoint =
-            details.localPosition; // Simpan posisi layar untuk indikator
-      });
-
-      // Hilangkan indikator fokus setelah jeda
-      await Future.delayed(const Duration(milliseconds: 500));
-      setState(() {
-        _focusPoint = null;
-      });
-    } on CameraException catch (e) {
-      log("Error focusing: ${e.description}");
-      // print("Error focusing: ${e.description}");
-    }
-  }
-
-  void _toggleFlashMode() {
-    FlashMode newMode;
-    // Logika switch flash: Off -> Auto -> Always (sesuai kebutuhan)
-    if (_currentFlashMode == FlashMode.off) {
-      newMode = FlashMode.auto;
-    } else if (_currentFlashMode == FlashMode.auto) {
-      newMode = FlashMode.always;
-    } else {
-      newMode = FlashMode.off;
-    }
-
-    // Terapkan ke CameraController
-    controller!.setFlashMode(newMode);
-
-    setState(() {
-      _currentFlashMode = newMode;
-    });
-  }
-
-  Future<void> _initCameraAndPermissions() async {
-    // Jika controller sudah ada sebelumnya (misal user refresh/retry),
-    // matikan dulu controller lama agar tidak tabrakan/memory leak.
-    if (controller != null) {
-      await controller!.dispose();
-    }
-
-    try {
-      // 1. Ambil list kamera
-      final cameras = await availableCameras();
-
-      // Cek mounted agar tidak lanjut jika user sudah keluar layar
-      if (!mounted) return;
-
-      // 2. Cek apakah ada kamera
-      if (cameras.isEmpty) {
-        _showErrorAndPop("Tidak ada kamera tersedia di perangkat ini.");
-        return;
-      }
-
-      // 3. Pilih Kamera Belakang (Back)
-      final camera = cameras.firstWhere(
-        (camera) => camera.lensDirection == CameraLensDirection.back,
-        orElse: () => cameras.first,
-      );
-
-      // 4. Inisialisasi Controller
-      controller = CameraController(
-        camera,
-        ResolutionPreset.max, // ✅ KUNCI KETAJAMAN
-        enableAudio: false, // Optimasi performa
-        imageFormatGroup: Platform.isAndroid
-            ? ImageFormatGroup.jpeg
-            : ImageFormatGroup.bgra8888,
-      );
-
-      // 5. Mulai Kamera
-      await controller!.initialize();
-
-      // --- CONFIGURATION BLOCKS (Aman dengan try-catch terpisah) ---
-
-      // A. Flash (Opsional, kadang gagal di awal)
-      try {
-        await controller!.setFlashMode(_currentFlashMode);
-      } catch (e) {
-        debugPrint("Set Flash gagal (non-fatal): $e");
-      }
-
-      // B. Focus (PENTING: Continuous Auto Focus)
-      try {
-        await controller!.setFocusMode(FocusMode.auto);
-      } catch (e) {
-        debugPrint("Fitur Auto Focus tidak didukung: $e");
-      }
-
-      // C. Exposure (Agar cahaya menyesuaikan otomatis)
-      try {
-        await controller!.setExposureMode(ExposureMode.auto);
-      } catch (e) {
-        debugPrint("Fitur Auto Exposure tidak didukung: $e");
-      }
-
-      // D. Zoom Capabilities
-      // Bungkus try-catch juga untuk jaga-jaga
-      try {
-        _minZoomLevel = await controller!.getMinZoomLevel();
-        _maxZoomLevel = await controller!.getMaxZoomLevel();
-      } catch (e) {
-        // Default fallback jika gagal baca zoom
-        _minZoomLevel = 1.0;
-        _maxZoomLevel = 1.0;
-      }
-
-      // 6. Update UI
-      if (mounted) {
-        setState(() => _isCameraInitialized = true);
-      }
-    } on CameraException catch (e) {
-      _showErrorAndPop("Gagal inisialisasi kamera: ${e.description}");
-    } catch (e) {
-      _showErrorAndPop("Terjadi kesalahan sistem kamera: $e");
-    }
-  }
-
-  Future<void> _capturePhotoAndLocation() async {
-    // 1. GENTLE THROTTLE: Jika sedang proses, langsung abaikan tanpa Toast yang mengganggu
-    if (controller == null ||
-        !controller!.value.isInitialized ||
-        _isCapturing) {
-      return;
-    }
-
-    // 2. FEEDBACK INSTAN: Getaran (Haptic) & Animasi Shutter (Opsional)
-    HapticFeedback.mediumImpact();
-    setState(() {
-      _isShutterLocked = true;
-      _isCapturing = true;
-    });
-
-    try {
-      // 3. CAPTURE FOTO
-      final XFile capturedFile = await controller!.takePicture();
-      setState(() {
-        _isShutterLocked = false;
-      });
-
-      // 4. PRE-CEK GPS SERVICE
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                "Layanan GPS tidak aktif. Mohon nyalakan GPS Anda.",
-              ),
-              duration: Duration(seconds: 4),
-            ),
-          );
-        }
-        Geolocator.openLocationSettings();
-        return;
-      }
-
-      // 5. CROPPER
-      if (mounted) setState(() => _isProcessingData = false);
-
-      final croppedFile = await ImageCropper().cropImage(
-        sourcePath: capturedFile.path,
-        compressQuality: 70,
-        uiSettings: [
-          AndroidUiSettings(
-            toolbarTitle: 'Edit Foto',
-            toolbarColor: Colors.blue[700],
-            toolbarWidgetColor: Colors.white,
-            initAspectRatio: CropAspectRatioPreset.original,
-            lockAspectRatio: false,
-          ),
-          IOSUiSettings(title: 'Crop Reklame'),
-        ],
-        // Menentukan rasio yang dapat digunakan pengguna (opsional)
-        // cropStyle: CropStyle.rectangle,
-      );
-
-      if (croppedFile == null) {
-        setState(() {
-          _isCapturing = false;
-          _isShutterLocked = false;
-          _isProcessingData = false;
-        });
-        return;
-      }
-
-      setState(() {
-        _isProcessingData = true;
-        _loadingMessage = "Menyiapkan Foto...";
-      });
-
-      final File originalCroppedFile = File(croppedFile.path);
-      final File safeFileToUpload = await FileCacheHelper.saveToCache(
-        originalCroppedFile,
-      );
-
-      //delay 1s to show loading message
-      await Future.delayed(const Duration(milliseconds: 1200));
-
-      if (!mounted) return;
-
-      setState(() {
-        _loadingMessage = "Mencari Titik GPS...";
-      });
-
-      // 6. GET GPS
-      final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-      ).timeout(const Duration(seconds: 8));
-
-      await Future.delayed(const Duration(milliseconds: 800));
-
-      if (!mounted) return;
-
-      await context.pushNamed(
-        AppRoutes.results,
-        extra: {
-          'imagePath': safeFileToUpload.path,
-          'latitude': position.latitude,
-          'longitude': position.longitude,
-        },
-      );
-    } on TimeoutException {
-      _showErrorSnackBar("Gagal mendapatkan lokasi GPS: Waktu habis.");
-    } on CameraException catch (e) {
-      _showErrorSnackBar("Gagal mengambil foto: ${e.description}");
-    } on PlatformException catch (e) {
-      _showErrorSnackBar("Masalah sistem: ${e.message}");
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isCapturing = false;
-          _isProcessingData = false;
-        });
-      }
-    }
-  }
-
-  void _showErrorSnackBar(String message) {
-    if (mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
-    }
-  }
-
-  void _showErrorAndPop(String message) {
-    if (mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
-      Navigator.pop(context);
-    }
-  }
-
-  // Fungsi bantu untuk mendapatkan ikon flash
-  IconData _getFlashIcon(FlashMode mode) {
-    switch (mode) {
-      case FlashMode.off:
-        return Icons.flash_off;
-      case FlashMode.auto:
-        return Icons.flash_auto;
-      case FlashMode.always:
-        return Icons.flash_on;
-      default:
-        return Icons.flash_off;
-    }
-  }
-
+class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _initCameraAndPermissions();
+    context.read<CameraCubit>().start();
   }
 
   @override
   void dispose() {
-    controller?.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // Controller harus dipastikan tidak null dan sudah diinisialisasi
-    if (controller == null || !controller!.value.isInitialized) {
-      return;
-    }
+    final cubit = context.read<CameraCubit>();
+    final cameraState = cubit.state;
 
-    // Jika aplikasi di background (inactive/paused), hentikan kamera
-    if (state == AppLifecycleState.inactive ||
-        state == AppLifecycleState.paused) {
-      controller?.dispose(); // Hancurkan controller lama
-      setState(() => _isCameraInitialized = false); // Set state ke loading
-    }
+    bool isBusy =
+        cameraState is CameraCapturing || cameraState is CameraProcessing;
 
-    // Jika aplikasi kembali ke foreground (resumed), inisialisasi ulang
-    if (state == AppLifecycleState.resumed) {
-      // Panggil ulang fungsi inisialisasi
-      _initCameraAndPermissions();
+    switch (state) {
+      case AppLifecycleState.paused:
+      case AppLifecycleState.inactive:
+        if (!isBusy) {
+          cubit.onAppPaused();
+        }
+        break;
+
+      case AppLifecycleState.resumed:
+        if (!isBusy) {
+          cubit.onAppResumed();
+        }
+        break;
+
+      default:
+        break;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (!_isCameraInitialized) {
-      return const Scaffold(
-        backgroundColor: Colors.black,
-        body: Center(
-          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-        ),
-      );
-    }
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: BlocConsumer<CameraCubit, CameraState>(
+        listener: (context, state) {
+          // 1. Handle Navigasi Sukses
+          if (state is CameraCaptureSuccess) {
+            final cameraCubit = context.read<CameraCubit>();
+            context
+                .pushNamed(
+                  AppRoutes.results,
+                  extra: {
+                    'imagePath': state.imagePath,
+                    'latitude': state.latitude,
+                    'longitude': state.longitude,
+                  },
+                )
+                .then((_) {
+                  // Opsional: Restart kamera saat kembali dari result page
+                  cameraCubit.start();
+                });
+          }
 
-    // Tampilan Kamera Live
-    return AnimatedOpacity(
-      opacity: _isCameraInitialized ? 1.0 : 0.0,
-      duration: const Duration(milliseconds: 400),
-      child: PopScope(
-        canPop: true,
-        child: Scaffold(
-          backgroundColor: Colors.black,
-          body: ColoredBox(
-            color: Colors.black,
-            child: Stack(
+          // 2. Handle Error (GPS Mati / Timeout)
+          if (state is CameraFailure) {
+            // Cek jika errornya spesifik GPS Disabled
+            if (state.message == "GPS_DISABLED") {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text("GPS Wajib Aktif. Mohon nyalakan GPS."),
+                  action: SnackBarAction(
+                    label: "SETTINGS",
+                    onPressed: () => Geolocator.openLocationSettings(),
+                  ),
+                  duration: const Duration(seconds: 4),
+                ),
+              );
+            } else {
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text(state.message)));
+            }
+          }
+        },
+        builder: (context, state) {
+          // A. Handle Permission Error
+          if (state is CameraPermissionDenied) {
+            return CameraErrorView(
+              onRetry: () => context.read<CameraCubit>().retry(),
+            );
+          }
+          if (state is CameraPermissionPermanentlyDenied) {
+            return CameraErrorView(
+              isPermanentlyDenied: true,
+              onOpenSettings: () => openAppSettings(),
+            );
+          }
+
+          // B. Handle Active Camera States (Ready, Focused, Capturing, Processing)
+          // Kita gunakan getter 'controller' dari cubit agar preview tidak hilang
+          // saat state berubah menjadi Capturing/Processing.
+          final cubit = context.read<CameraCubit>();
+          final controller = cubit.controller;
+
+          if (controller != null && controller.value.isInitialized) {
+            return Stack(
               children: [
-                // a. Camera Preview (dengan Glitch Fix dan Gesture)
-                Positioned.fill(
-                  child: AnimatedOpacity(
-                    opacity: _isCameraInitialized ? 1.0 : 0.0,
-                    duration: const Duration(milliseconds: 400),
-                    child: ColoredBox(
-                      color: Colors.black,
-                      child: GestureDetector(
-                        onTapDown: _handleTapToFocus,
-                        onScaleStart: _handleScaleStart,
-                        onScaleUpdate: _handleScaleUpdate,
-
-                        child: ClipRRect(
-                          child: LayoutBuilder(
-                            builder: (context, constraints) {
-                              final screenWidth = constraints.maxWidth;
-                              final cameraRatio =
-                                  1 / controller!.value.aspectRatio;
-                              final requiredPreviewHeight =
-                                  screenWidth / cameraRatio;
-
-                              return SizedBox.expand(
-                                child: FittedBox(
-                                  fit: BoxFit.cover,
-                                  child: SizedBox(
-                                    width: screenWidth,
-                                    height: requiredPreviewHeight,
-                                    child: CameraPreview(controller!),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ),
-                    ),
+                // 1. Layer Paling Bawah: PREVIEW KAMERA
+                CameraView(
+                  onScaleStart: () =>
+                      context.read<CameraCubit>().onScaleStart(),
+                  controller: controller,
+                  onScaleUpdate: (details) =>
+                      cubit.onScaleUpdate(details.scale),
+                  onTapToFocus: (details, size) => cubit.onTapToFocus(
+                    tapPosition: details.localPosition,
+                    previewSize: size,
                   ),
                 ),
 
-                // b. AppBar/Header
-                Positioned(
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  child: AppBar(
-                    backgroundColor: Colors.transparent,
-                    elevation: 0,
-                    leading: IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
-                      onPressed: () =>
-                          Navigator.of(context).pop(), // Kembali ke HomePage
-                    ),
-                    actions: [
-                      IconButton(
-                        icon: Icon(
-                          _getFlashIcon(_currentFlashMode),
-                          color: Colors.white,
-                        ),
-                        onPressed: _toggleFlashMode,
-                      ),
-                    ],
-                  ),
-                ),
-
-                // c.Shutter Button di tengah bawah
-                Positioned(
-                  bottom: 40,
-                  left: 0,
-                  right: 0,
-                  child: Center(
-                    child: IconButton(
-                      iconSize: 80,
-                      onPressed: _isShutterLocked
-                          ? null
-                          : _capturePhotoAndLocation,
-                      icon: Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: _isShutterLocked
-                                ? Colors.white30
-                                : Colors.white,
-                            width: 6,
-                          ),
-                          color: Colors.white.withValues(alpha: 0.2),
-                        ),
-                        child: _isShutterLocked
-                            ? const Center(
-                                child: SizedBox(
-                                  width: 24,
-                                  height: 24,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2,
-                                  ),
-                                ),
-                              )
-                            : const Icon(
-                                Icons.camera_alt,
-                                size: 40,
-                                color: Colors.white,
-                              ),
-                      ),
-                    ),
-                  ),
-                ),
-
-                // d. Indikator Fokus Tap-to-Focus
-                if (_focusPoint != null)
+                // 2. Layer Overlay: FOCUS INDICATOR (Kotak Kuning)
+                // Hanya muncul jika state spesifik CameraFocused
+                if (state is CameraFocused)
                   Positioned(
-                    // Posisi top/left dihitung dari _focusPoint yang disimpan di State
-                    // Dikurangi 20 untuk memposisikan kotak 40x40 tepat di tengah tap (40/2 = 20)
-                    top: _focusPoint!.dy - 20,
-                    left: _focusPoint!.dx - 20,
+                    top: state.focusPoint.dy - 20,
+                    left: state.focusPoint.dx - 20,
                     child: Container(
                       width: 40,
                       height: 40,
@@ -527,13 +157,34 @@ class _CaptureScreenState extends State<CaptureScreen>
                     ),
                   ),
 
-                // f. Overlay Proses Data
-                if (_isProcessingData)
-                  ProcessingOverlayWidget(message: _loadingMessage),
+                // 3. Layer Kontrol: ACTION BAR (Flash, Shutter)
+                CaptureActionBar(
+                  // Ambil flashMode dari state jika ada, atau default ke off
+                  flashMode: (state is CameraReady)
+                      ? state.flashMode
+                      : (state is CameraFocused)
+                      ? state.flashMode
+                      : FlashMode.off,
+                  // Disable tombol saat capturing/processing
+                  isLoading: state is CameraCapturing,
+                  isDisabled:
+                      state is CameraCapturing || state is CameraProcessing,
+                  onToggleFlash: cubit.toggleFlashMode,
+                  onCapture: cubit.capture,
+                ),
+
+                // 4. Layer Paling Atas: LOADING OVERLAY
+                if (state is CameraProcessing)
+                  ProcessingOverlayWidget(message: state.message),
               ],
-            ),
-          ),
-        ),
+            );
+          }
+
+          // C. Fallback Loading (Saat inisialisasi awal)
+          return const Center(
+            child: CircularProgressIndicator(color: Colors.white),
+          );
+        },
       ),
     );
   }

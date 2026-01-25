@@ -70,6 +70,8 @@ void _handlePermissionDenied(BuildContext context) async {
     showAppModal(
       context: context,
       title: "Izin Diperlukan",
+      showCloseButton: false,
+      isDismissible: true,
       content: const Text(
         "Izin Kamera dan Lokasi ditolak permanen. Mohon aktifkan secara manual di pengaturan aplikasi.",
         textAlign: TextAlign.center,

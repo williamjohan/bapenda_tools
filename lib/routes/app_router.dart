@@ -1,4 +1,6 @@
 import 'package:cekreklamemobile/domain/entities/billboard_entity.dart';
+import 'package:cekreklamemobile/presentation/features/camera/cubit/camera_cubit.dart';
+import 'package:cekreklamemobile/presentation/features/camera/pages/camera_page.dart';
 import 'package:cekreklamemobile/presentation/features/detail/pages/detail_page.dart';
 import 'package:cekreklamemobile/presentation/features/home/pages/home_page.dart';
 import 'package:cekreklamemobile/presentation/features/result/pages/check_result_page.dart';
@@ -13,7 +15,6 @@ import 'app_routes.dart';
 import '../presentation/features/onboarding/pages/onboarding_page.dart';
 import '../presentation/features/auth/pages/login_page.dart';
 import '../presentation/features/auth/pages/signup_page.dart';
-import '../presentation/features/camera/pages/camera_page.dart';
 
 final GoRouter appRouter = GoRouter(
   observers: [if (kDebugMode) ChuckerFlutter.navigatorObserver],
@@ -54,12 +55,16 @@ final GoRouter appRouter = GoRouter(
       pageBuilder: (context, state) {
         return CustomTransitionPage(
           key: state.pageKey,
-          child: const CaptureScreen(),
+          child: BlocProvider(
+            create: (_) => CameraCubit()..start(),
+            child: const CameraPage(),
+          ),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             const begin = 0.9;
             const end = 1.0;
             const curve = Curves.easeOutExpo;
-            var tween = Tween(
+
+            final tween = Tween(
               begin: begin,
               end: end,
             ).chain(CurveTween(curve: curve));
@@ -72,7 +77,6 @@ final GoRouter appRouter = GoRouter(
               ),
             );
           },
-          // Durasi transisi (misal 300ms biar cepat seperti kamera asli)
           transitionDuration: const Duration(milliseconds: 500),
         );
       },
