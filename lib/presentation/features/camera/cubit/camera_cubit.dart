@@ -189,8 +189,13 @@ class CameraCubit extends Cubit<CameraState> {
         _safeEmit(CameraFailure("Gagal mendapatkan lokasi: Waktu habis."));
       } else if (e.toString().contains("Capture dibatalkan")) {
         // Balik ke ready
-        if (_controller != null) {
+        if (_controller != null && _controller!.value.isInitialized) {
           _safeEmit(CameraReady(_controller!, _currentFlashMode, _currentZoom));
+        }
+        try {
+          await _controller!.resumePreview();
+        } catch (_) {
+          // Ignore error jika resume gagal (jarang terjadi)
         }
       } else {
         _safeEmit(CameraFailure(e.toString()));
@@ -203,7 +208,18 @@ class CameraCubit extends Cubit<CameraState> {
   // ===============================================================
 
   Future<void> _initCamera() async {
-    if (_controller != null) await _controller!.dispose();
+    // 🛑 SAFETY FIX: Putuskan hubungan UI ke Controller SEBELUM dispose
+    final oldController = _controller;
+
+    // 1. Null-kan variable global agar UI langsung berhenti render CameraPreview
+    _controller = null;
+
+    // 2. Emit Loading agar UI menampilkan loading spinner/layar hitam
+    _safeEmit(CameraLoading());
+
+    if (oldController != null) {
+      await oldController.dispose();
+    }
 
     final cameras = await availableCameras();
     if (cameras.isEmpty) throw Exception("Kamera tidak ditemukan");
@@ -215,14 +231,16 @@ class CameraCubit extends Cubit<CameraState> {
     );
 
     // ✅ FIX 4: ImageFormatGroup untuk stabilitas Android & iOS
-    _controller = CameraController(
+    final newController = CameraController(
       camera,
-      ResolutionPreset.high, // ✅ FIX 2: Resolusi MAX (Tajam)
+      ResolutionPreset.high,
       enableAudio: false,
       imageFormatGroup: Platform.isAndroid
           ? ImageFormatGroup.jpeg
           : ImageFormatGroup.bgra8888,
     );
+
+    _controller = newController;
 
     await _controller!.initialize();
 

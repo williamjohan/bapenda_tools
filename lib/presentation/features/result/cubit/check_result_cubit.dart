@@ -24,13 +24,17 @@ class CheckResultCubit extends Cubit<CheckResultState> {
     required double latitude,
     required double longitude,
   }) async {
+    if (isClosed) return;
     emit(CheckResultLoading());
 
     await Future.delayed(const Duration(milliseconds: 500));
+    if (isClosed) return;
 
     try {
       File originalFile = File(imagePath);
       File compressedFile = await ImageUtils.compressImage(originalFile);
+      if (isClosed) return;
+
       final String finalPath = compressedFile.path;
 
       final results = await checkBillboard.call(
@@ -38,12 +42,15 @@ class CheckResultCubit extends Cubit<CheckResultState> {
         latitude: latitude,
         longitude: longitude,
         onProgress: (progress) {
+          if (isClosed) return;
           emit(CheckResultLoading(progress: progress));
         },
       );
       _currentResults = results;
+      if (isClosed) return;
       emit(CheckResultLoaded(results));
     } catch (e) {
+      if (isClosed) return;
       emit(CheckResultError(_mapErrorToMessage(e)));
     }
   }
