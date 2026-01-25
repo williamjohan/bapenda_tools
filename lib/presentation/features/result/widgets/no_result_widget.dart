@@ -112,93 +112,22 @@ class NoResultsWidget extends StatelessWidget {
               height: 50,
               child: ElevatedButton.icon(
                 onPressed: () {
-                  showAppModal(
-                    context: context,
-                    showCloseButton: false,
-                    isDismissible: false,
-                    content: Column(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.red.withValues(alpha: 0.1),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.warning_amber_rounded,
-                            color: Colors.red,
-                            size: 32,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-
-                        const Text(
-                          "Konfirmasi Pelaporan",
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-
-                        const Text(
-                          AppConstants.questionReportIlegal,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 14, color: Colors.grey),
-                        ),
-                      ],
-                    ),
-
-                    primaryButton: Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              side: BorderSide(color: Colors.grey.shade300),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              foregroundColor: Colors.grey.shade700,
-                            ),
-                            child: const Text(
-                              "Batal",
-                              style: TextStyle(fontWeight: FontWeight.w600),
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: () {
-                              Navigator.of(context).pop();
-
-                              context.read<CheckResultCubit>().submitReport(
-                                imagePath: capturedImagePath,
-                                latitude: latitude,
-                                longitude: longitude,
-                                type: ReportType.ilegal.value,
-                              );
-                            },
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              backgroundColor: Colors.redAccent,
-                              foregroundColor: Colors.white,
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                            child: const Text(
-                              "Ya, Laporkan",
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                  showConfirmationModal(
+                    context, // Ingat: Positional parameter (tanpa 'context:')
+                    title: "Konfirmasi Pelaporan",
+                    message:
+                        AppConstants.questionReportIlegal, // Pesan untuk Ilegal
+                    confirmText: "Ya, Laporkan",
+                    cancelText: "Batal",
+                    isDestructive: true,
+                    onConfirm: () {
+                      context.read<CheckResultCubit>().submitReport(
+                        imagePath: capturedImagePath,
+                        latitude: latitude,
+                        longitude: longitude,
+                        type: ReportType.ilegal.value, // Tipe 1 (Ilegal)
+                      );
+                    },
                   );
                 },
                 icon: const Icon(Icons.campaign, color: Colors.white),

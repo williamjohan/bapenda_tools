@@ -107,14 +107,11 @@ Future<void> showAppModal({
   );
 }
 
-// File: custom_modal_widget.dart
-
-// Ubah return type jadi Future<void>
 Future<void> showConnectionErrorModal(
   BuildContext context, {
   VoidCallback? onRetry,
+  String? message, // 👈 Tambahkan parameter ini
 }) {
-  // Tambahkan return di sini 👇
   return showAppModal(
     context: context,
     isDismissible: true,
@@ -127,17 +124,18 @@ Future<void> showConnectionErrorModal(
       child: const Icon(Icons.wifi_off_rounded, size: 40, color: Colors.red),
     ),
     content: Column(
-      // Pastikan konten rapi
       children: [
         const Text(
           "Koneksi Terputus",
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
-        const Text(
-          "Gagal mengunduh pembaruan. Pastikan koneksi internet Anda stabil, lalu coba lagi.",
+        Text(
+          // 👇 Gunakan parameter atau default text yang umum
+          message ??
+              "Gagal terhubung ke server. Periksa koneksi internet Anda dan coba lagi.",
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 14, color: Colors.black54),
+          style: const TextStyle(fontSize: 14, color: Colors.black54),
         ),
       ],
     ),
@@ -148,6 +146,7 @@ Future<void> showConnectionErrorModal(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
       onPressed: () {
+        // Cek mounted dulu (Good Practice!)
         if (context.mounted) {
           Navigator.of(context).maybePop();
         }
@@ -158,5 +157,107 @@ Future<void> showConnectionErrorModal(
       child: const Text("Coba Lagi"),
     ),
     showCloseButton: false,
+  );
+}
+
+Future<void> showConfirmationModal(
+  BuildContext context, {
+  required String title,
+  required String message,
+  required VoidCallback onConfirm,
+  String confirmText = "Ya, Lanjutkan",
+  String cancelText = "Batal",
+  bool isDestructive = false, // Jika true, tombol jadi Merah (Bahaya)
+}) {
+  return showAppModal(
+    context: context,
+    showCloseButton: false,
+    isDismissible: false,
+    content: Column(
+      children: [
+        // 1. Icon Warning / Info
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: isDestructive
+                ? Colors.red.withValues(alpha: 0.1)
+                : Colors.blue.withValues(alpha: 0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            isDestructive ? Icons.warning_amber_rounded : Icons.info_outline,
+            color: isDestructive ? Colors.red : Colors.blue,
+            size: 32,
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // 2. Judul
+        Text(
+          title,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 8),
+
+        // 3. Pesan
+        Text(
+          message,
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontSize: 14, color: Colors.grey),
+        ),
+      ],
+    ),
+
+    // 4. Tombol Aksi
+    primaryButton: Row(
+      children: [
+        // Tombol Batal
+        Expanded(
+          child: OutlinedButton(
+            onPressed: () => Navigator.of(context).pop(),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              side: BorderSide(color: Colors.grey.shade300),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              foregroundColor: Colors.grey.shade700,
+            ),
+            child: Text(
+              cancelText,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+        ),
+
+        const SizedBox(width: 12),
+
+        // Tombol Konfirmasi
+        Expanded(
+          child: ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop(); // Tutup modal dulu
+              onConfirm(); // Jalankan aksi (misal: panggil cubit)
+            },
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              backgroundColor: isDestructive
+                  ? Colors.redAccent
+                  : Colors.blueAccent,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text(
+              confirmText,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ),
+      ],
+    ),
   );
 }

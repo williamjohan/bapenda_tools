@@ -71,6 +71,8 @@ class _UpdateProgressView extends StatelessWidget {
                     context.read<UpdateProgressCubit>().retry();
                   }
                 : null,
+            message:
+                "Gagal mengunduh pembaruan. Pastikan koneksi internet Anda stabil, lalu coba lagi",
           ).then((_) {
             // Kalau user tutup modal TANPA retry → close dialog utama
             if (context.mounted &&
