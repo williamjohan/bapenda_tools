@@ -1,5 +1,7 @@
-import 'package:cekreklamemobile/presentation/features/home/home_handlers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../cubit/home_cubit.dart';
 
 class CaptureBillboardButton extends StatelessWidget {
   const CaptureBillboardButton({super.key});
@@ -22,15 +24,14 @@ class CaptureBillboardButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         child: InkWell(
           borderRadius: BorderRadius.circular(20),
-          // --- PENAMBAHAN EFEK SPLASH ---
-          splashColor: Colors.white.withValues(
-            alpha: 0.2,
-          ), // Efek cipratan putih halus
-          highlightColor: Colors.white.withValues(
-            alpha: 0.1,
-          ), // Warna saat ditekan lama
-          // ------------------------------
-          onTap: () => handleCaptureTap(context),
+          splashColor: Colors.white.withValues(alpha: 0.2),
+          highlightColor: Colors.white.withValues(alpha: 0.1),
+
+          // 🔥 SATU-SATUNYA PERUBAHAN LOGIC
+          onTap: () {
+            context.read<HomeCubit>().onCapturePressed();
+          },
+
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
             child: Row(

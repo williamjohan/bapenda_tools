@@ -1,9 +1,14 @@
 import 'dart:io';
 import 'package:cekreklamemobile/core/services/app_logger_service.dart';
+import 'package:cekreklamemobile/core/services/location_service.dart';
 import 'package:cekreklamemobile/core/services/map_service.dart';
+import 'package:cekreklamemobile/core/services/network_service.dart';
+import 'package:cekreklamemobile/core/services/permission_service.dart';
 import 'package:cekreklamemobile/core/services/update_service.dart';
 import 'package:cekreklamemobile/core/services/update_version_service.dart';
 import 'package:cekreklamemobile/domain/usecases/post_report_usecase.dart';
+import 'package:cekreklamemobile/presentation/features/home/cubit/home_cubit.dart';
+import 'package:cekreklamemobile/presentation/features/home/cubit/nearby_cubit.dart';
 import 'package:cekreklamemobile/presentation/features/result/cubit/check_result_cubit.dart';
 import 'package:chucker_flutter/chucker_flutter.dart';
 import 'package:dio/dio.dart';
@@ -20,7 +25,9 @@ import 'domain/usecases/check_billboard_usecase.dart';
 final GetIt locator = GetIt.instance;
 
 void setupLocator() {
-  // --- External Dependencies ---
+  /// =========================
+  //  External Libraries
+  // =========================
   locator.registerLazySingleton<Dio>(() {
     final dio = Dio(
       BaseOptions(
@@ -85,19 +92,23 @@ void setupLocator() {
     return dio;
   });
 
-  // --- Data Layer ---
-  // 1. Remote Data Source (butuh Dio)
+  // =========================
+  // 1. Data Source Layer
+  // =========================
   locator.registerLazySingleton<BillboardRemoteDataSource>(
     () => BillboardRemoteDataSource(locator<Dio>()),
   );
 
-  // 2. Repository Implementasi (butuh Remote Data Source)
+  // =========================
+  // 2. Repository Layer
+  // =========================
   locator.registerLazySingleton<BillboardRepository>(
     () => BillboardRepositoryImpl(locator<BillboardRemoteDataSource>()),
   );
 
-  // --- Use Case Layer ---
-  // 3. Use Case (butuh Repository)
+  // =========================
+  // 3. Use Case Layer
+  // =========================
   locator.registerLazySingleton<CheckBillboardUseCase>(
     () => CheckBillboardUseCase(locator()),
   );
@@ -106,20 +117,25 @@ void setupLocator() {
     () => PostReportUsecase(locator<BillboardRepository>()),
   );
 
-  // --- 4 Presentation Layer ---
-  locator.registerFactory<CheckResultCubit>(
-    () => CheckResultCubit(
-      locator<CheckBillboardUseCase>(),
-      locator<PostReportUsecase>(),
-    ),
+  // =========================
+  // 4. Core Services
+  // =========================
+  locator.registerLazySingleton<LoggerService>(() => AppLoggerService());
+  locator.registerLazySingleton<LocationService>(
+    () => LocationService(locator<LoggerService>()),
+  );
+  locator.registerLazySingleton<MapService>(
+    () => MapService(locator<LoggerService>()),
   );
 
-  // --- 5 Core Services ---
-  //
-  locator.registerLazySingleton<MapService>(() => MapService());
-  locator.registerLazySingleton<LoggerService>(() => AppLoggerService());
   locator.registerLazySingleton<UpdateVersionService>(
     () => UpdateVersionService(locator<LoggerService>()),
+  );
+  locator.registerLazySingleton<PermissionService>(
+    () => PermissionService(locator<LoggerService>()),
+  );
+  locator.registerLazySingleton<NetworkService>(
+    () => NetworkService(locator<LoggerService>()),
   );
   locator.registerLazySingleton<UpdateService>(
     () => UpdateService(
@@ -128,5 +144,34 @@ void setupLocator() {
       locator<LoggerService>(),
     ),
   );
-  // ... (Tambahkan Cubit/Bloc di sini nanti)
+
+  // =========================
+  // 5. PRESENTATION LAYER
+  // =========================
+
+  // Result Features ( ResultCubit )
+  locator.registerFactory<CheckResultCubit>(
+    () => CheckResultCubit(
+      locator<CheckBillboardUseCase>(),
+      locator<PostReportUsecase>(),
+    ),
+  );
+
+  // Home Feature (HomeCubit )
+  locator.registerFactory<HomeCubit>(
+    () => HomeCubit(
+      updateService: locator<UpdateService>(),
+      permissionService: locator<PermissionService>(),
+      locationService: locator<LocationService>(),
+      logger: locator<LoggerService>(),
+    ),
+  );
+
+  // Home Feature (NearbyCubit)
+  locator.registerFactory<NearbyCubit>(
+    () => NearbyCubit(
+      mapService: locator<MapService>(),
+      networkService: locator<NetworkService>(),
+    ),
+  );
 }

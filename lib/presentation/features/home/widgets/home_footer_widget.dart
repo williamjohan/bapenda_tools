@@ -6,15 +6,10 @@ class HomeFooter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Gunakan SafeArea bottom: false di Scaffold utama,
-    // tapi true di sini jika ingin footer naik sedikit dari bezel bawah
     return SafeArea(
       top: false,
       child: Container(
-        padding: const EdgeInsets.only(
-          top: 20,
-          bottom: 20,
-        ), // Horizontal sudah diatur parent
+        padding: const EdgeInsets.only(top: 20, bottom: 20),
         child: Column(
           children: [
             // BAGIAN LOGO & ALAMAT

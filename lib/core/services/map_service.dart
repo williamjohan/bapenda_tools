@@ -1,22 +1,20 @@
 // lib/core/services/map_service.dart
+import 'package:cekreklamemobile/core/services/app_logger_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart'; // Untuk kDebugMode
 
-String? _googleApiKey = dotenv.env['GOOGLE_MAPS_API_KEY'];
-
 class MapService {
-  // Method untuk menghasilkan URL Peta Statis
-  MapService() {
-    // Ini akan mengambil key yang sudah dimuat di main()
-    _googleApiKey = dotenv.env['GOOGLE_MAPS_API_KEY'];
-  }
+  final LoggerService logger;
+  final String? _googleApiKey;
+  MapService(this.logger) : _googleApiKey = dotenv.env['GOOGLE_MAPS_API_KEY'];
 
   String generateStaticMapUrl({required double lat, required double long}) {
     // Cek apakah key berhasil dimuat
-    if (_googleApiKey == null || _googleApiKey!.isEmpty) {
+    if (_googleApiKey == null || _googleApiKey.isEmpty) {
       if (kDebugMode) {
         print("WARNING: Google Maps API Key TIDAK DITEMUKAN di .env!");
       }
+      logger.w('MapService: GOOGLE_MAPS_API_KEY missing');
       return 'https://via.placeholder.com/400x200?text=MAP+API+KEY+MISSING';
     }
 
@@ -34,7 +32,7 @@ class MapService {
         '&markers=$marker'
         '&key=$_googleApiKey';
 
-    // print("🔍 TEST THIS URL: $url");
+    logger.d('MapService: static map url generated');
     return url;
   }
 }

@@ -1,4 +1,6 @@
+import 'package:cekreklamemobile/core/constants/app_colors.dart';
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class CustomModal extends StatelessWidget {
   final String? title;
@@ -57,8 +59,8 @@ class CustomModal extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.primary,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textPrimary,
                 ),
               ),
               const SizedBox(height: 10),
@@ -110,7 +112,7 @@ Future<void> showAppModal({
 Future<void> showConnectionErrorModal(
   BuildContext context, {
   VoidCallback? onRetry,
-  String? message, // 👈 Tambahkan parameter ini
+  String? message,
 }) {
   return showAppModal(
     context: context,
@@ -127,11 +129,10 @@ Future<void> showConnectionErrorModal(
       children: [
         const Text(
           "Koneksi Terputus",
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
         ),
         const SizedBox(height: 8),
         Text(
-          // 👇 Gunakan parameter atau default text yang umum
           message ??
               "Gagal terhubung ke server. Periksa koneksi internet Anda dan coba lagi.",
           textAlign: TextAlign.center,
@@ -195,7 +196,7 @@ Future<void> showConfirmationModal(
         // 2. Judul
         Text(
           title,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 8),
@@ -233,7 +234,7 @@ Future<void> showConfirmationModal(
 
         const SizedBox(width: 12),
 
-        // Tombol Konfirmasi
+        // Tombol
         Expanded(
           child: ElevatedButton(
             onPressed: () {
@@ -259,5 +260,113 @@ Future<void> showConfirmationModal(
         ),
       ],
     ),
+  );
+}
+
+//  Modal GPS Mati
+Future<void> showGpsDisabledModal(BuildContext context) {
+  return showAppModal(
+    context: context,
+    isDismissible: true,
+    content: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Pastikan asset ini ada, atau ganti Icon jika belum ada
+        const Icon(Icons.location_off_rounded, size: 60, color: Colors.orange),
+        const SizedBox(height: 16),
+        const Text(
+          "GPS Tidak Aktif",
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+        ),
+        const SizedBox(height: 10),
+        const Text(
+          "Mohon aktifkan GPS Anda agar lokasi reklame dapat tercatat dengan akurat.",
+          textAlign: TextAlign.center,
+          style: TextStyle(color: Colors.grey),
+        ),
+      ],
+    ),
+    primaryButton: ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.blueAccent,
+        foregroundColor: Colors.white,
+      ),
+      onPressed: () {
+        Navigator.pop(context);
+        // Membuka setting (memerlukan package:geolocator atau app_settings)
+        // Geolocator.openLocationSettings();
+        // Karena ini UI dumb, logic buka setting idealnya di-pass via callback
+        // tapi untuk simple use case, biarkan user manual atau inject callback.
+      },
+      child: const Text("Saya Mengerti"),
+    ),
+    showCloseButton: false,
+  );
+}
+
+// Modal Permission Ditolak
+Future<void> showPermissionDeniedModal(BuildContext context) {
+  return showAppModal(
+    context: context,
+    title: "Izin Diperlukan",
+    content: const Text(
+      "Aplikasi memerlukan izin Kamera dan Lokasi untuk memproses laporan reklame. Mohon berikan izin.",
+      textAlign: TextAlign.center,
+      style: TextStyle(color: Colors.grey),
+    ),
+    primaryButton: ElevatedButton(
+      onPressed: () => Navigator.pop(context),
+      child: const Text("OK"),
+    ),
+    showCloseButton: false,
+    isDismissible: true,
+  );
+}
+
+// Modal Permission Permanen (Hard Deny)
+Future<void> showPermissionPermanentlyDeniedModal(BuildContext context) {
+  return showAppModal(
+    context: context,
+    title: "Izin Ditolak Permanen",
+    isDismissible: true,
+    content: const Text(
+      "Anda telah menolak izin Kamera/Lokasi secara permanen. Mohon aktifkan secara manual melalui Pengaturan Aplikasi.",
+      textAlign: TextAlign.center,
+      style: TextStyle(color: Colors.grey),
+    ),
+    primaryButton: ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.redAccent,
+        foregroundColor: Colors.white,
+      ),
+      onPressed: () {
+        Navigator.pop(context);
+        openAppSettings();
+      },
+      child: const Text("Buka Pengaturan"),
+    ),
+  );
+}
+
+// Modal Lapor Kendala (Umum)
+Future<void> showReportIssueModal(BuildContext context) {
+  return showAppModal(
+    context: context,
+    title: "Lapor Kendala",
+    content: const Text(
+      "Ada kendala teknis? Hubungi tim IT Bapenda Surabaya melalui WhatsApp atau Email resmi.",
+      textAlign: TextAlign.center,
+      style: TextStyle(color: Colors.black87),
+    ),
+    primaryButton: ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: const Color(0xFF175CFF),
+        foregroundColor: Colors.white,
+      ),
+      onPressed: () => Navigator.pop(context),
+      child: const Text("Hubungi Tim IT"),
+    ),
+    showCloseButton: false,
+    isDismissible: true,
   );
 }

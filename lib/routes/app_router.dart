@@ -1,7 +1,9 @@
+import 'package:cekreklamemobile/di.dart';
 import 'package:cekreklamemobile/domain/entities/billboard_entity.dart';
 import 'package:cekreklamemobile/presentation/features/camera/cubit/camera_cubit.dart';
 import 'package:cekreklamemobile/presentation/features/camera/pages/camera_page.dart';
 import 'package:cekreklamemobile/presentation/features/detail/pages/detail_page.dart';
+import 'package:cekreklamemobile/presentation/features/home/cubit/home_cubit.dart';
 import 'package:cekreklamemobile/presentation/features/home/pages/home_page.dart';
 import 'package:cekreklamemobile/presentation/features/result/pages/check_result_page.dart';
 import 'package:cekreklamemobile/presentation/features/splashscreen/cubit/splash_cubit.dart';
@@ -107,13 +109,18 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: AppRoutes.home,
       name: AppRoutes.home,
-      pageBuilder: (context, state) => CustomTransitionPage(
-        key: state.pageKey,
-        child: const HomePage(),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeTransition(opacity: animation, child: child);
-        },
-      ),
+      pageBuilder: (context, state) {
+        return CustomTransitionPage(
+          key: state.pageKey,
+          child: BlocProvider<HomeCubit>(
+            create: (_) => locator<HomeCubit>()..onPageOpened(),
+            child: const HomePage(),
+          ),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+        );
+      },
     ),
 
     // Tambahkan route lainnya di sini

@@ -1,266 +1,257 @@
-import 'package:cekreklamemobile/core/services/app_logger_service.dart';
-import 'package:cekreklamemobile/core/services/update_service.dart';
-import 'package:cekreklamemobile/core/services/update_version_service.dart';
 import 'package:cekreklamemobile/di.dart';
+import 'package:cekreklamemobile/presentation/features/home/cubit/home_action.dart';
+import 'package:cekreklamemobile/presentation/features/home/cubit/home_cubit.dart';
+import 'package:cekreklamemobile/presentation/features/home/cubit/home_state.dart';
+import 'package:cekreklamemobile/presentation/features/home/cubit/nearby_cubit.dart';
+import 'package:cekreklamemobile/presentation/features/home/cubit/nearby_state.dart';
 import 'package:cekreklamemobile/presentation/features/home/widgets/capture_card_widget.dart';
-import 'package:cekreklamemobile/presentation/features/home/widgets/greeting_card_widget.dart';
 import 'package:cekreklamemobile/presentation/features/home/widgets/cek_reklame_terdekat_widget.dart';
+import 'package:cekreklamemobile/presentation/features/home/widgets/greeting_card_widget.dart';
 import 'package:cekreklamemobile/presentation/features/home/widgets/home_footer_widget.dart';
 import 'package:cekreklamemobile/presentation/features/update/update_dialog.dart';
 import 'package:cekreklamemobile/presentation/shared/widgets/custom_modal_widget.dart';
-import 'package:dio/dio.dart';
+import 'package:cekreklamemobile/routes/app_routes.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
-class HomePage extends StatefulWidget {
+// =================================================================
+// 1. HOME PAGE (WRAPPER)
+// Tugas: Hanya mendaftarkan Provider/Cubit
+// =================================================================
+class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  Widget build(BuildContext context) {
+    return MultiBlocProvider(
+      providers: [
+        // HomeCubit: Logic Header, Menu, Navigasi
+        BlocProvider(create: (context) => locator<HomeCubit>()..onPageOpened()),
+        // NearbyCubit: Khusus Widget Peta
+        BlocProvider(
+          create: (context) => locator<NearbyCubit>()..initLocation(),
+        ),
+      ],
+      // Panggil Child Widget yang terpisah (View)
+      child: const HomeView(),
+    );
+  }
 }
 
-class _HomePageState extends State<HomePage> {
-  // State: Info update (null = gak ada update, not null = ada update)
-  UpdateInfo? _updateInfo;
+// =================================================================
+// 2. HOME VIEW (CONTENT & LIFECYCLE)
+// Tugas: Menangani Tampilan UI dan Lifecycle (Resume/Pause)
+// =================================================================
+class HomeView extends StatefulWidget {
+  const HomeView({super.key});
 
-  // State: Loading check (biar gak flicker)
-  bool _isChecking = true;
+  @override
+  State<HomeView> createState() => _HomeViewState();
+}
 
-  Future<void> _checkUpdateStatus() async {
-    final updateService = UpdateService(
-      locator<Dio>(),
-      locator<UpdateVersionService>(),
-      locator<LoggerService>(),
-    );
-
-    // Panggil fungsi getAvailableUpdate (Bukan checkForUpdate yang lama)
-    final info = await updateService.getAvailableUpdate();
-
-    if (mounted) {
-      setState(() {
-        _updateInfo = info; // Simpan info update
-        _isChecking = false;
-      });
-
-      // Auto-Show Dialog jika ada update
-      if (_updateInfo != null) {
-        showUpdateDialog(context, _updateInfo!);
-      }
-    }
-  }
-
+class _HomeViewState extends State<HomeView> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
-    // Cek update otomatis saat halaman dibuka
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkUpdateStatus();
-    });
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  // ✅ SEKARANG AMAN: Karena HomeView adalah ANAK dari MultiBlocProvider
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      final nearbyCubit = context.read<NearbyCubit>();
+
+      // Refresh lokasi hanya jika statusnya error/denied/disabled
+      if (nearbyCubit.state.status != NearbyStatus.active) {
+        nearbyCubit.initLocation();
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF4F6FA),
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(80),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.only(
-              left: 20,
-              right: 0,
-              top: 10,
-              bottom: 10,
-            ),
-            child: Row(
-              children: [
-                Image.asset('assets/images/logosby.png', height: 50),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        "Cek Reklame",
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      Text(
-                        "Kota Surabaya",
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: Colors.black54,
-                        ),
-                      ),
-                    ],
-                  ),
+    // Gunakan BlocConsumer HANYA untuk HomeCubit
+    return BlocConsumer<HomeCubit, HomeState>(
+      listenWhen: (prev, curr) =>
+          prev.action != curr.action && curr.action != null,
+      listener: (context, state) {
+        final action = state.action;
+
+        if (action is HomeShowUpdateDialog) {
+          showUpdateDialog(context, action.updateInfo);
+        } else if (action is HomeShowGpsDisabled) {
+          showGpsDisabledModal(context);
+        } else if (action is HomeShowPermissionDenied) {
+          showPermissionDeniedModal(context); // Soft Deny
+        } else if (action is HomeShowPermissionPermanentlyDenied) {
+          showPermissionPermanentlyDeniedModal(context); // Hard Deny
+        } else if (action is HomeNavigateToCamera) {
+          context.pushNamed(AppRoutes.camera);
+        }
+
+        context.read<HomeCubit>().clearAction();
+      },
+      builder: (context, state) {
+        final updateInfo = state.updateInfo;
+        final isChecking = state.isCheckingUpdate;
+
+        return Scaffold(
+          backgroundColor: const Color(0xFFF4F6FA),
+          appBar: PreferredSize(
+            preferredSize: const Size.fromHeight(80),
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.only(
+                  left: 20,
+                  right: 20,
+                  top: 10,
+                  bottom: 10,
                 ),
-
-                // 👇 MENU TITIK TIGA (SUDAH DI-OPTIMASI)
-                PopupMenuButton<String>(
-                  padding: EdgeInsets.zero,
-                  offset: const Offset(-20, 0),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  icon: const Icon(
-                    Icons.more_vert_rounded,
-                    color: Colors.black45,
-                  ),
-
-                  // Logic Klik Menu
-                  onSelected: (value) {
-                    if (value == 'update' && _updateInfo != null) {
-                      // Panggil Dialog Update Manual pakai data _updateInfo
-                      showUpdateDialog(context, _updateInfo!);
-                    } else if (value == 'report') {
-                      _showReportDialog(context);
-                    }
-                  },
-
-                  itemBuilder: (context) => [
-                    // ITEM MENU UPDATE
-                    PopupMenuItem(
-                      value: 'update',
-                      // Menu aktif HANYA JIKA ada update
-                      enabled: _updateInfo != null,
-                      child: Row(
+                child: Row(
+                  children: [
+                    Image.asset('assets/images/logosby.png', height: 50),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(
-                            Icons.system_update_alt_rounded,
-                            size: 20,
-                            // Warna Icon Abu-abu kalau gak ada update
-                            color: _updateInfo != null
-                                ? Colors.blue
-                                : Colors.grey[400],
+                          Text(
+                            "Cek Reklame",
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
                           ),
-                          const SizedBox(width: 12),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "Cek Pembaruan",
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                  // Warna Text Abu-abu kalau gak ada update
-                                  color: _updateInfo != null
-                                      ? Colors.black
-                                      : Colors.grey[400],
-                                ),
-                              ),
-                              // Text kecil status
-                              Text(
-                                _isChecking
-                                    ? "Memeriksa..."
-                                    : (_updateInfo != null
-                                          ? "Versi baru tersedia"
-                                          : "Sudah versi terbaru"),
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  color: _updateInfo != null
-                                      ? Colors.orange
-                                      : Colors.grey,
-                                ),
-                              ),
-                            ],
+                          Text(
+                            "Kota Surabaya",
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: Colors.black54,
+                            ),
                           ),
                         ],
                       ),
                     ),
 
-                    // ITEM MENU LAPOR (HELPER METHOD LAMA)
-                    _buildPopupItem(
-                      'report',
-                      Icons.bug_report_outlined,
-                      "Lapor Kendala",
-                      Colors.redAccent,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          return SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: constraints.maxHeight),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      children: const [
-                        GreetingCard(),
-                        SizedBox(height: 12),
-                        CaptureBillboardButton(),
-                        SizedBox(height: 12),
-                        NearbyBillboardCard(),
-                        SizedBox(height: 12),
+                    // MENU TITIK TIGA
+                    PopupMenuButton<String>(
+                      padding: EdgeInsets.zero,
+                      offset: const Offset(-0, 0),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                      icon: const Icon(
+                        Icons.more_vert_rounded,
+                        color: Colors.black45,
+                      ),
+                      onSelected: (value) {
+                        if (value == 'update' && updateInfo != null) {
+                          context.read<HomeCubit>().onManualCheckUpdate();
+                        } else if (value == 'report') {
+                          showReportIssueModal(context);
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        // ITEM 1: UPDATE
+                        PopupMenuItem(
+                          value: 'update',
+                          enabled: updateInfo != null,
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.system_update_alt_rounded,
+                                size: 20,
+                                color: updateInfo != null
+                                    ? Colors.blue
+                                    : Colors.grey[400],
+                              ),
+                              const SizedBox(width: 12),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    "Cek Pembaruan",
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      color: updateInfo != null
+                                          ? Colors.black
+                                          : Colors.grey[400],
+                                    ),
+                                  ),
+                                  Text(
+                                    isChecking
+                                        ? "Memeriksa..."
+                                        : (updateInfo != null
+                                              ? "Versi baru tersedia"
+                                              : "Sudah versi terbaru"),
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: updateInfo != null
+                                          ? Colors.orange
+                                          : Colors.grey,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        // ITEM 2: LAPOR
+                        const PopupMenuItem(
+                          value: 'report',
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.bug_report_outlined,
+                                size: 20,
+                                color: Colors.redAccent,
+                              ),
+                              SizedBox(width: 12),
+                              Text(
+                                "Lapor Kendala",
+                                style: TextStyle(fontSize: 14),
+                              ),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
-                    const HomeFooter(),
                   ],
                 ),
               ),
             ),
-          );
-        },
-      ),
-    );
-  }
-
-  PopupMenuItem<String> _buildPopupItem(
-    String value,
-    IconData icon,
-    String title,
-    Color color,
-  ) {
-    return PopupMenuItem(
-      value: value,
-      child: Row(
-        children: [
-          Icon(icon, size: 20, color: color),
-          const SizedBox(width: 12),
-          Text(
-            title,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
           ),
-        ],
-      ),
-    );
-  }
-
-  // Helper untuk Dialog Lapor (Dipisah biar rapi)
-  void _showReportDialog(BuildContext context) {
-    showAppModal(
-      context: context,
-      title: "Lapor Kendala",
-      content: const Text(
-        "Ada kendala teknis? Hubungi tim IT Bapenda Surabaya melalui WhatsApp atau Email.",
-        textAlign: TextAlign.center,
-      ),
-      primaryButton: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF175CFF),
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
+          body: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                children: const [
+                  GreetingCard(),
+                  SizedBox(height: 12),
+                  CaptureBillboardButton(),
+                  SizedBox(height: 12),
+                  NearbyBillboardCard(), // Widget ini aman ambil NearbyCubit
+                  SizedBox(height: 12),
+                  HomeFooter(),
+                  SizedBox(height: 20),
+                ],
+              ),
+            ),
           ),
-        ),
-        onPressed: () => Navigator.pop(context),
-        child: const Text("Hubungi Tim IT"),
-      ),
-      showCloseButton: false,
+        );
+      },
     );
   }
 }
