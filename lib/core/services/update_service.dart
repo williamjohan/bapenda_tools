@@ -26,12 +26,13 @@ class UpdateService {
 
   Future<UpdateInfo?> getAvailableUpdate() async {
     try {
-      final jsonTestingUrl = dotenv.env['UPDATE_JSON_TESTING_URL'] ?? '';
+      // final jsonTestingUrl = dotenv.env['UPDATE_JSON_TESTING_URL'] ?? '';
+      final jsonUrl = dotenv.env['UPDATE_JSON_URL'] ?? '';
 
       _logger.i("Checking update status");
-      _logger.d("Update JSON URL: $jsonTestingUrl");
+      _logger.d("Update JSON URL: $jsonUrl");
 
-      final response = await _dio.get(jsonTestingUrl);
+      final response = await _dio.get(jsonUrl);
 
       _logger.d("Raw response: ${response.data}");
 

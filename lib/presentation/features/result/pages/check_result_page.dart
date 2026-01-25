@@ -22,7 +22,7 @@ class CheckResultScreen extends StatelessWidget {
       create: (context) {
         final cubit = locator<CheckResultCubit>();
 
-        cubit.testingfetchResult(
+        cubit.fetchResults(
           imagePath: imagePath,
           latitude: latitude,
           longitude: longitude,
