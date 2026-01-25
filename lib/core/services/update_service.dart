@@ -1,7 +1,8 @@
 import 'dart:convert';
+import 'package:cekreklamemobile/core/services/app_logger_service.dart';
+import 'package:cekreklamemobile/core/services/update_version_service.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import '../utils/update_utils.dart';
 
 // Model Data Update
 class UpdateInfo {
@@ -18,17 +19,21 @@ class UpdateInfo {
 
 class UpdateService {
   final Dio _dio;
+  final UpdateVersionService versionService;
+  final LoggerService _logger;
 
-  UpdateService(this._dio);
+  UpdateService(this._dio, this.versionService, this._logger);
 
-  // 1. FUNGSI CEK UPDATE (Mengembalikan Data atau Null)
   Future<UpdateInfo?> getAvailableUpdate() async {
     try {
-      // final jsonUrl = dotenv.env['UPDATE_JSON_URL'] ?? '';
       final jsonTestingUrl = dotenv.env['UPDATE_JSON_TESTING_URL'] ?? '';
 
-      print("🔍 Checking update status: $jsonTestingUrl");
+      _logger.i("Checking update status");
+      _logger.d("Update JSON URL: $jsonTestingUrl");
+
       final response = await _dio.get(jsonTestingUrl);
+
+      _logger.d("Raw response: ${response.data}");
 
       Map<String, dynamic> data;
       if (response.data is String) {
@@ -37,24 +42,30 @@ class UpdateService {
         data = Map<String, dynamic>.from(response.data);
       }
 
-      int serverBuildNumber = int.tryParse(data['buildNumber'].toString()) ?? 0;
+      final serverBuildNumber =
+          int.tryParse(data['buildNumber'].toString()) ?? 0;
 
-      // Logic Versioning (Server > Local)
-      bool hasUpdate = await UpdateUtils.isUpdateAvailable(serverBuildNumber);
+      _logger.d("Server build number: $serverBuildNumber");
+
+      final hasUpdate = await versionService.isUpdateAvailable(
+        serverBuildNumber,
+      );
 
       if (hasUpdate) {
-        print("🚀 New version found: ${data['versionName']}");
+        _logger.w("New version found: ${data['versionName']}");
+
         return UpdateInfo(
           version: data['versionName'] ?? 'Unknown',
           changelog: data['changelog'] ?? '-',
           downloadUrl: data['url'] ?? '',
         );
       } else {
-        print("✅ App is up to date.");
+        _logger.i("App is up to date");
       }
-    } catch (e) {
-      print("❌ Failed to get update info: $e");
+    } catch (e, s) {
+      _logger.e("Failed to get update info", e, s);
     }
-    return null; // Tidak ada update atau Error
+
+    return null;
   }
 }

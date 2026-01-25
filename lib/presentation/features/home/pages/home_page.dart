@@ -1,4 +1,6 @@
+import 'package:cekreklamemobile/core/services/app_logger_service.dart';
 import 'package:cekreklamemobile/core/services/update_service.dart';
+import 'package:cekreklamemobile/core/services/update_version_service.dart';
 import 'package:cekreklamemobile/di.dart';
 import 'package:cekreklamemobile/presentation/features/home/widgets/capture_card_widget.dart';
 import 'package:cekreklamemobile/presentation/features/home/widgets/greeting_card_widget.dart';
@@ -24,7 +26,11 @@ class _HomePageState extends State<HomePage> {
   bool _isChecking = true;
 
   Future<void> _checkUpdateStatus() async {
-    final updateService = UpdateService(locator<Dio>());
+    final updateService = UpdateService(
+      locator<Dio>(),
+      locator<UpdateVersionService>(),
+      locator<LoggerService>(),
+    );
 
     // Panggil fungsi getAvailableUpdate (Bukan checkForUpdate yang lama)
     final info = await updateService.getAvailableUpdate();

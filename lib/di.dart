@@ -1,5 +1,8 @@
 import 'dart:io';
+import 'package:cekreklamemobile/core/services/app_logger_service.dart';
 import 'package:cekreklamemobile/core/services/map_service.dart';
+import 'package:cekreklamemobile/core/services/update_service.dart';
+import 'package:cekreklamemobile/core/services/update_version_service.dart';
 import 'package:cekreklamemobile/domain/usecases/post_report_usecase.dart';
 import 'package:cekreklamemobile/presentation/features/result/cubit/check_result_cubit.dart';
 import 'package:chucker_flutter/chucker_flutter.dart';
@@ -53,7 +56,7 @@ void setupLocator() {
     dio.interceptors.add(
       RetryInterceptor(
         dio: dio,
-        logPrint: print, // Bisa diganti dengan logger Anda
+        logPrint: (obj) => locator<LoggerService>().d(obj),
         retries: 3, // Coba ulang 3 kali
         retryDelays: const [
           Duration(seconds: 2),
@@ -114,6 +117,16 @@ void setupLocator() {
   // --- 5 Core Services ---
   //
   locator.registerLazySingleton<MapService>(() => MapService());
-
+  locator.registerLazySingleton<LoggerService>(() => AppLoggerService());
+  locator.registerLazySingleton<UpdateVersionService>(
+    () => UpdateVersionService(locator<LoggerService>()),
+  );
+  locator.registerLazySingleton<UpdateService>(
+    () => UpdateService(
+      locator<Dio>(),
+      locator<UpdateVersionService>(),
+      locator<LoggerService>(),
+    ),
+  );
   // ... (Tambahkan Cubit/Bloc di sini nanti)
 }

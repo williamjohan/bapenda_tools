@@ -47,7 +47,9 @@ dependencies:
   camera: ^0.10.5+9 
   google_maps_flutter: ^2.5.3
   permission_handler: ^11.3.1
+  image_cropper: ^11.0.0
   
+  # Navigation
   go_router: ^14.3.0
 
   #compress image
@@ -58,7 +60,6 @@ dependencies:
   cupertino_icons: ^1.0.8
   shared_preferences: ^2.5.3
   path_provider: ^2.1.5
-  image_cropper: ^11.0.0
   flutter_dotenv: ^6.0.0
   change_app_package_name: ^1.5.0
   package_info_plus: ^9.0.0
@@ -66,6 +67,8 @@ dependencies:
   chucker_flutter: ^1.9.1
   ota_update: ^7.1.0
   connectivity_plus: ^6.0.3
+  logger: ^2.0.2
+
 
 dev_dependencies:
   flutter_test:

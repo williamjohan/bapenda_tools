@@ -137,7 +137,7 @@ class _UpdateProgressView extends StatelessWidget {
                       height: 1.4,
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
                   ClipRRect(
                     borderRadius: BorderRadius.circular(10),
                     child: LinearProgressIndicator(
@@ -147,6 +147,16 @@ class _UpdateProgressView extends StatelessWidget {
                       valueColor: const AlwaysStoppedAnimation<Color>(
                         Colors.blue,
                       ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    "Harap Tunggu Hingga Proses Download Selesai.",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[400],
+                      height: 1.4,
                     ),
                   ),
                 ],
