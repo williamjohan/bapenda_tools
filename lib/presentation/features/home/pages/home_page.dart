@@ -113,7 +113,7 @@ class _HomeViewState extends State<HomeView> with WidgetsBindingObserver {
               child: Padding(
                 padding: const EdgeInsets.only(
                   left: 20,
-                  right: 20,
+                  right: 0,
                   top: 10,
                   bottom: 10,
                 ),
@@ -146,7 +146,7 @@ class _HomeViewState extends State<HomeView> with WidgetsBindingObserver {
                     // MENU TITIK TIGA
                     PopupMenuButton<String>(
                       padding: EdgeInsets.zero,
-                      offset: const Offset(-0, 0),
+                      offset: const Offset(-20, 0),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(15),
                       ),
