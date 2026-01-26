@@ -1,47 +1,41 @@
 name: Build Release APK
 
-# 1. TRIGGER
 on:
   release:
     types: [published]
 
-# 2. JOBS
+permissions:
+  contents: write
+
 jobs:
   build_and_release:
     name: Build APK Release
     runs-on: ubuntu-latest
 
     steps:
-      # A. Ambil Code
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # B. Setup Java
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
 
-      # C. Setup Flutter
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.22.0' 
+          flutter-version: '3.35.4' 
           channel: 'stable'
+          cache: false
 
-      # D. Ambil Library
       - name: Get Dependencies
         run: flutter pub get
 
-      # E. Decode Keystore
-      # Menggunakan secret: KEYSTORE_BASE64
       - name: Decode Keystore
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
 
-      # F.1 Buat key.properties
-      # Menggunakan secret: KEYSTORE_PASSWORD, KEY_PASSWORD, KEY_ALIAS
       - name: Create key.properties
         run: |
           echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" > android/key.properties
@@ -49,18 +43,13 @@ jobs:
           echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
           echo "storeFile=../app/upload-keystore.jks" >> android/key.properties
 
-      # F.2 Buat file .env
-      # Menggunakan secret: ENV_FILE
-      # Pastikan isi ENV_FILE di GitHub Secrets adalah baris lengkap: BASE_URL=https://...
       - name: Create .env file
         run: |
           echo "${{ secrets.ENV_FILE }}" > .env
 
-      # G. Build APK
       - name: Build APK
         run: flutter build apk --release
 
-      # H. Upload APK ke Halaman Release GitHub
       - name: Upload APK to Release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
