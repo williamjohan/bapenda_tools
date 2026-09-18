@@ -1,7 +1,7 @@
-import 'package:cekreklamemobile/core/utils/file_cache_utils.dart';
-import 'package:cekreklamemobile/di.dart';
-import 'package:cekreklamemobile/presentation/features/auth/cubit/auth_cubit.dart';
-import 'package:cekreklamemobile/routes/app_router.dart';
+import 'package:bapendacore/core/constants/app_colors_new.dart';
+import 'package:bapendacore/core/utils/file_cache_utils.dart';
+import 'package:bapendacore/presentation/features/auth/cubit/auth_cubit.dart';
+import 'package:bapendacore/routes/app_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -12,13 +12,10 @@ void main() async {
   await dotenv.load(fileName: ".env");
   configureDependencies();
   await FileCacheHelper.clearCache();
+  
+  final authCubit = getIt<AuthCubit>()..checkSession();
 
-  runApp(
-    BlocProvider<AuthCubit>(
-      create: (_) => locator<AuthCubit>()..checkSession(),
-      child: const MyApp(),
-    ),
-  );
+  runApp(BlocProvider<AuthCubit>.value(value: authCubit, child: const MyApp()));
 }
 
 class MyApp extends StatelessWidget {
@@ -31,7 +28,7 @@ class MyApp extends StatelessWidget {
       routerConfig: AppRouter.router,
       title: 'Bapenda Internal',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: AppThemeColors.primary),
         fontFamily: 'Poppins',
         useMaterial3: true,
       ),

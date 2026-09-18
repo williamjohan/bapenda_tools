@@ -1,21 +1,10 @@
+import 'package:bapendacore/core/constants/app_colors_new.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../../di.dart';
 import '../cubit/auth_cubit.dart';
 import '../cubit/auth_state.dart';
-
-class _AuthPalette {
-  static const ink = Color(0xFF16202E);
-  static const inkMuted = Color(0xFF5B6674);
-  static const background = Color(0xFFF3F5F8); 
-  static const surface = Color(0xFFFFFFFF); 
-  static const navy = Color(0xFF0B3D62); 
-  static const gold = Color(0xFFC89B3C); 
-  static const border = Color(0xFFE1E5EB);
-  static const error = Color(0xFFD64545);
-}
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -43,7 +32,7 @@ class _LoginPageState extends State<LoginPage> {
     if (!isValid) return;
 
     FocusScope.of(context).unfocus();
-    locator<AuthCubit>().login(
+    context.read<AuthCubit>().login(
       nipController.text.trim(),
       passwordController.text,
     );
@@ -52,10 +41,9 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _AuthPalette.background,
+      backgroundColor: AppThemeColors.defaultBackground,
       resizeToAvoidBottomInset: true,
       body: BlocListener<AuthCubit, AuthState>(
-        bloc: locator<AuthCubit>(),
         listener: (context, state) {
           if (state is AuthFailure) {
             ScaffoldMessenger.of(context)
@@ -63,7 +51,7 @@ class _LoginPageState extends State<LoginPage> {
               ..showSnackBar(
                 SnackBar(
                   behavior: SnackBarBehavior.floating,
-                  backgroundColor: _AuthPalette.error,
+                  backgroundColor: AppThemeColors.danger,
                   content: Text(state.message),
                 ),
               );
@@ -95,7 +83,7 @@ class _LoginPageState extends State<LoginPage> {
                         style: GoogleFonts.lora(
                           fontSize: 26,
                           fontWeight: FontWeight.w600,
-                          color: _AuthPalette.ink,
+                          color: AppThemeColors.titleText,
                           height: 1.2,
                         ),
                       ),
@@ -105,7 +93,7 @@ class _LoginPageState extends State<LoginPage> {
                         textAlign: TextAlign.center,
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 14,
-                          color: _AuthPalette.inkMuted,
+                          color: AppThemeColors.secondaryText,
                           height: 1.4,
                         ),
                       ),
@@ -125,7 +113,9 @@ class _LoginPageState extends State<LoginPage> {
                         textAlign: TextAlign.center,
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 12,
-                          color: _AuthPalette.inkMuted.withValues(alpha: 0.8),
+                          color: AppThemeColors.secondaryText.withValues(
+                            alpha: 0.8,
+                          ),
                         ),
                       ),
                     ],
@@ -151,12 +141,12 @@ class _Brandmark extends StatelessWidget {
         width: 76,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: _AuthPalette.surface,
+          color: AppThemeColors.defaultSurface,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: _AuthPalette.border),
+          border: Border.all(color: AppThemeColors.defaultBorder),
           boxShadow: [
             BoxShadow(
-              color: _AuthPalette.navy.withValues(alpha: 0.08),
+              color: AppThemeColors.primary.withValues(alpha: 0.08),
               blurRadius: 24,
               offset: const Offset(0, 12),
             ),
@@ -167,7 +157,7 @@ class _Brandmark extends StatelessWidget {
           fit: BoxFit.contain,
           errorBuilder: (context, error, stackTrace) => Icon(
             Icons.account_balance_outlined,
-            color: _AuthPalette.navy,
+            color: AppThemeColors.primary,
             size: 32,
           ),
         ),
@@ -202,26 +192,26 @@ class _LoginCard extends StatelessWidget {
     return InputDecoration(
       hintText: hint,
       hintStyle: GoogleFonts.plusJakartaSans(
-        color: _AuthPalette.inkMuted,
+        color: AppThemeColors.secondaryText,
         fontSize: 14,
       ),
-      prefixIcon: Icon(icon, color: _AuthPalette.inkMuted, size: 20),
+      prefixIcon: Icon(icon, color: AppThemeColors.secondaryText, size: 20),
       suffixIcon: suffix,
       filled: true,
-      fillColor: _AuthPalette.background,
+      fillColor: AppThemeColors.defaultBackground,
       contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-      border: _border(_AuthPalette.border, 1),
-      enabledBorder: _border(_AuthPalette.border, 1),
-      focusedBorder: _border(_AuthPalette.gold, 1.5),
-      errorBorder: _border(_AuthPalette.error, 1),
-      focusedErrorBorder: _border(_AuthPalette.error, 1.5),
+      border: _border(AppThemeColors.defaultBorder, 1),
+      enabledBorder: _border(AppThemeColors.defaultBorder, 1),
+      focusedBorder: _border(AppThemeColors.gold, 1.5),
+      errorBorder: _border(AppThemeColors.danger, 1),
+      focusedErrorBorder: _border(AppThemeColors.danger, 1.5),
     );
   }
 
   TextStyle _label() => GoogleFonts.plusJakartaSans(
     fontSize: 13,
     fontWeight: FontWeight.w600,
-    color: _AuthPalette.ink,
+    color: AppThemeColors.titleText,
   );
 
   @override
@@ -229,9 +219,9 @@ class _LoginCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: _AuthPalette.surface,
+        color: AppThemeColors.defaultSurface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _AuthPalette.border),
+        border: Border.all(color: AppThemeColors.defaultBorder),
       ),
       child: Form(
         key: formKey,
@@ -244,17 +234,12 @@ class _LoginCard extends StatelessWidget {
             TextFormField(
               controller: nipController,
               keyboardType: TextInputType.number,
-              inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-              ],
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 14,
-                color: _AuthPalette.ink,
+                color: AppThemeColors.primaryText,
               ),
-              decoration: _decoration(
-                'Masukkan NIP',
-                Icons.badge_outlined,
-              ),
+              decoration: _decoration('Masukkan NIP', Icons.badge_outlined),
               validator: (value) => (value == null || value.trim().isEmpty)
                   ? 'NIP wajib diisi'
                   : null,
@@ -267,7 +252,7 @@ class _LoginCard extends StatelessWidget {
               obscureText: obscurePassword,
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 14,
-                color: _AuthPalette.ink,
+                color: AppThemeColors.primaryText,
               ),
               decoration: _decoration(
                 'Masukkan kata sandi',
@@ -277,7 +262,7 @@ class _LoginCard extends StatelessWidget {
                     obscurePassword
                         ? Icons.visibility_off_outlined
                         : Icons.visibility_outlined,
-                    color: _AuthPalette.inkMuted,
+                    color: AppThemeColors.secondaryText,
                     size: 20,
                   ),
                   onPressed: onToggleObscure,
@@ -290,9 +275,7 @@ class _LoginCard extends StatelessWidget {
             Align(
               alignment: Alignment.centerRight,
               child: TextButton(
-                onPressed: () {
-                 
-                },
+                onPressed: () {},
                 style: TextButton.styleFrom(
                   padding: const EdgeInsets.only(top: 8),
                   minimumSize: Size.zero,
@@ -303,14 +286,13 @@ class _LoginCard extends StatelessWidget {
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: _AuthPalette.navy,
+                    color: AppThemeColors.primary,
                   ),
                 ),
               ),
             ),
             const SizedBox(height: 12),
             BlocBuilder<AuthCubit, AuthState>(
-              bloc: locator<AuthCubit>(),
               builder: (context, state) {
                 final isLoading = state is AuthLoading;
                 return SizedBox(
@@ -319,10 +301,9 @@ class _LoginCard extends StatelessWidget {
                   child: ElevatedButton(
                     onPressed: isLoading ? null : onSubmit,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: _AuthPalette.navy,
-                      disabledBackgroundColor: _AuthPalette.navy.withValues(
-                        alpha: 0.6,
-                      ),
+                      backgroundColor: AppThemeColors.primary,
+                      disabledBackgroundColor: AppThemeColors.primary
+                          .withValues(alpha: 0.6),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),

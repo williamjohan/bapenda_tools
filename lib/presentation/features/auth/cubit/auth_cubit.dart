@@ -1,42 +1,45 @@
-import 'package:cekreklamemobile/domain/usecases/auth/auth_usecase.dart';
-import 'package:flutter/widgets.dart';
+// SESUDAH
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../core/services/app_logger_service.dart';
+import 'package:injectable/injectable.dart';
+import '../../../../domain/usecases/auth/auth_usecase.dart';
 import 'auth_state.dart';
 
+@lazySingleton
 class AuthCubit extends Cubit<AuthState> {
   final AuthUseCase authUseCase;
-  final LoggerService logger;
 
-  AuthCubit({required this.authUseCase, required this.logger})
+  AuthCubit({required this.authUseCase})
     : super(const AuthInitial());
 
   Future<void> checkSession() async {
-    debugPrint('[AUTH] checkSession START');
     emit(const AuthLoading());
     try {
-      final user = await authUseCase.getCurrentSession();
-      debugPrint('[AUTH] checkSession DONE, user=$user');
+      final isLoggedIn = await authUseCase.getCurrentSession();
+      if (!isLoggedIn) {
+        emit(const AuthUnauthenticated());
+        return;
+      }
+      final mustChangePassword = await authUseCase.getMustChangePassword();
       emit(
-        user != null ? AuthAuthenticated(user) : const AuthUnauthenticated(),
+        mustChangePassword
+            ? const AuthNeedsPasswordReset()
+            : const AuthAuthenticated(),
       );
     } catch (e) {
-      debugPrint('[AUTH] checkSession ERROR: $e');
-      logger.e('checkSession error: $e');
       emit(const AuthUnauthenticated());
     }
   }
 
-  Future<void> login(String username, String password) async {
+  Future<void> login(String nip, String password) async {
     emit(const AuthLoading());
     try {
-      final user = await authUseCase.login(
-        username: username,
-        password: password,
+      final result = await authUseCase.login(nip: nip, password: password);
+      emit(
+        result.isResetPassword
+            ? const AuthNeedsPasswordReset()
+            : const AuthAuthenticated(),
       );
-      emit(AuthAuthenticated(user));
     } catch (e) {
-      logger.e('login error: $e');
       emit(AuthFailure(_mapError(e)));
     }
   }
@@ -44,8 +47,6 @@ class AuthCubit extends Cubit<AuthState> {
   Future<void> logout() async {
     try {
       await authUseCase.logout();
-    } catch (e) {
-      logger.e('logout error: $e');
     } finally {
       emit(const AuthUnauthenticated());
     }
@@ -54,7 +55,7 @@ class AuthCubit extends Cubit<AuthState> {
   String _mapError(Object e) {
     final msg = e.toString().toLowerCase();
     if (msg.contains('401') || msg.contains('unauthorized')) {
-      return 'Username atau password salah';
+      return 'NIP atau kata sandi salah';
     }
     return 'Login gagal, silakan coba lagi';
   }

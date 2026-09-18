@@ -1,31 +1,33 @@
+import 'package:bapendacore/core/network/api_endpoints.dart';
+import 'package:bapendacore/core/network/base_api/base_api_response_model.dart';
+import 'package:bapendacore/data/models/auth/auth_model.dart';
 import 'package:dio/dio.dart';
+import 'package:injectable/injectable.dart';
 
-class AuthRemoteDataSource {
-  final Dio dio;
+abstract class AuthRemoteDataSource {
+  Future<AuthResponseModel> login(AuthRequestModel request);
+}
 
-  AuthRemoteDataSource(this.dio);
+@LazySingleton(as: AuthRemoteDataSource)
+class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
+  final Dio _dio;
+  AuthRemoteDataSourceImpl(this._dio);
 
-  Future<({String token, bool isResetPassword})> login({
-    required String nip,
-    required String password,
-  }) async {
-
-    final response = await dio.post(
-      '/auth/login',
-      data: {'nip': nip, 'password': password},
+  @override
+  Future<AuthResponseModel> login(AuthRequestModel request) async {
+    final response = await _dio.post(
+      ApiEndpoints.login,
+      data: request.toJson(),
     );
 
-    final body = response.data as Map<String, dynamic>;
+    final apiResponse = BaseApiResponseModel<AuthResponseModel>.fromJson(
+      response.data as Map<String, dynamic>,
+      (json) => AuthResponseModel.fromJson(json as Map<String, dynamic>),
+    );
 
-    // backend bisa aja balikin HTTP 200 tapi isSuccess: false, jadi dicek eksplisit
-    if (body['isSuccess'] != true) {
-      throw Exception(body['title'] ?? 'Login gagal');
+    if (!apiResponse.isSuccess || apiResponse.data == null) {
+      throw Exception(apiResponse.errorMessage);
     }
-
-    final data = body['data'] as Map<String, dynamic>;
-    return (
-      token: data['token'] as String? ?? '',
-      isResetPassword: data['isResetPassword'] as bool? ?? false,
-    );
+    return apiResponse.data!;
   }
 }

@@ -1,4 +1,3 @@
-import 'package:cekreklamemobile/domain/entities/users/user_entity.dart';
 import 'package:equatable/equatable.dart';
 
 abstract class AuthState extends Equatable {
@@ -16,10 +15,11 @@ class AuthLoading extends AuthState {
 }
 
 class AuthAuthenticated extends AuthState {
-  final UserEntity user;
-  const AuthAuthenticated(this.user);
-  @override
-  List<Object?> get props => [user];
+  const AuthAuthenticated();
+}
+
+class AuthNeedsPasswordReset extends AuthState {
+  const AuthNeedsPasswordReset();
 }
 
 class AuthUnauthenticated extends AuthState {

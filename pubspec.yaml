@@ -34,29 +34,9 @@ dependencies:
   dartz: ^0.10.1
   freezed_annotation: ^2.4.1
 
-<<<<<<< HEAD
-  # Networking
-  dio: ^5.3.3
-  http_parser: ^4.0.2
-
-  # Dependency Injection
-  get_it: ^7.6.4 # Service Locator
-
-  # Core Features
-  geolocator: ^11.0.0 
-  camera: ^0.10.5+9 
-  google_maps_flutter: ^2.5.3
-  permission_handler: ^11.3.1
-  image_cropper: ^11.0.0
-  flutter_secure_storage: ^10.3.1
-  google_fonts: ^8.2.1
-  
-  # Navigation
-=======
   # ==========================================
   # 🚦 ROUTING & NAVIGATION
   # ==========================================
->>>>>>> 61e65f3dafe58611b3cb369a3f0c5067cbaea6e5
   go_router: ^14.3.0
 
   # ==========================================
