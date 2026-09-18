@@ -1,5 +1,7 @@
 import 'package:cekreklamemobile/di.dart';
 import 'package:cekreklamemobile/domain/entities/billboard_entity.dart';
+import 'package:cekreklamemobile/presentation/features/auth/cubit/auth_cubit.dart';
+import 'package:cekreklamemobile/presentation/features/auth/cubit/auth_state.dart';
 import 'package:cekreklamemobile/presentation/features/camera/cubit/camera_cubit.dart';
 import 'package:cekreklamemobile/presentation/features/camera/pages/camera_page.dart';
 import 'package:cekreklamemobile/presentation/features/detail/pages/detail_page.dart';
@@ -14,43 +16,60 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'app_routes.dart';
+import 'go_router_refresh_stream.dart';
 import '../presentation/features/onboarding/pages/onboarding_page.dart';
 import '../presentation/features/auth/pages/login_page.dart';
-import '../presentation/features/auth/pages/signup_page.dart';
 
 final GoRouter appRouter = GoRouter(
   observers: [if (kDebugMode) ChuckerFlutter.navigatorObserver],
   initialLocation: AppRoutes.splashscreen,
+  refreshListenable: GoRouterRefreshStream(locator<AuthCubit>().stream),
+  redirect: (context, state) {
+    final authState = locator<AuthCubit>().state;
+    final location = state.matchedLocation;
+
+    if (authState is AuthInitial || authState is AuthLoading) {
+      return location == AppRoutes.splashscreen ? null : AppRoutes.splashscreen;
+    }
+
+    final isLoggedIn = authState is AuthAuthenticated;
+
+    final isAuthExemptRoute =
+        location == AppRoutes.login || location == AppRoutes.onboarding;
+
+    if (!isLoggedIn) {
+      return isAuthExemptRoute ? null : AppRoutes.login;
+    }
+
+    if (location == AppRoutes.login ||
+        location == AppRoutes.splashscreen ||
+        location == AppRoutes.onboarding) {
+      return AppRoutes.home;
+    }
+
+    return null;
+  },
   routes: [
     GoRoute(
       path: AppRoutes.splashscreen,
       name: AppRoutes.splashscreen,
       builder: (context, state) {
         return BlocProvider(
-          create: (_) => SplashCubit()..start(),
+          create: (_) => SplashCubit(authCubit: locator<AuthCubit>())..start(),
           child: const SplashScreen(),
         );
       },
     ),
-
     GoRoute(
       path: AppRoutes.onboarding,
       name: AppRoutes.onboarding,
       builder: (context, state) => const OnboardingPage(),
     ),
-
     GoRoute(
       path: AppRoutes.login,
       name: AppRoutes.login,
       builder: (context, state) => const LoginPage(),
     ),
-
-    GoRoute(
-      path: AppRoutes.signup,
-      name: AppRoutes.signup,
-      builder: (context, state) => const SignupPage(),
-    ),
-
     GoRoute(
       path: AppRoutes.camera,
       name: AppRoutes.camera,
@@ -65,12 +84,10 @@ final GoRouter appRouter = GoRouter(
             const begin = 0.9;
             const end = 1.0;
             const curve = Curves.easeOutExpo;
-
             final tween = Tween(
               begin: begin,
               end: end,
             ).chain(CurveTween(curve: curve));
-
             return FadeTransition(
               opacity: animation,
               child: ScaleTransition(
@@ -83,7 +100,6 @@ final GoRouter appRouter = GoRouter(
         );
       },
     ),
-
     GoRoute(
       path: AppRoutes.results,
       name: AppRoutes.results,
@@ -96,7 +112,6 @@ final GoRouter appRouter = GoRouter(
         );
       },
     ),
-
     GoRoute(
       path: AppRoutes.detail,
       name: AppRoutes.detail,
@@ -105,7 +120,6 @@ final GoRouter appRouter = GoRouter(
         return BillboardDetailScreen(billboard: billboard);
       },
     ),
-
     GoRoute(
       path: AppRoutes.home,
       name: AppRoutes.home,
@@ -122,7 +136,6 @@ final GoRouter appRouter = GoRouter(
         );
       },
     ),
-
     // Tambahkan route lainnya di sini
   ],
 );

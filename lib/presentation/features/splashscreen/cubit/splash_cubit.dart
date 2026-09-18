@@ -1,11 +1,14 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../auth/cubit/auth_cubit.dart';
+import '../../auth/cubit/auth_state.dart';
 import 'splash_state.dart';
 
 class SplashCubit extends Cubit<SplashState> {
-  SplashCubit() : super(SplashInitial());
+  final AuthCubit authCubit;
 
-  /// Entry point lifecycle Cubit
+  SplashCubit({required this.authCubit}) : super(SplashInitial());
+
   void start() {
     _checkNavigation();
   }
@@ -14,12 +17,18 @@ class SplashCubit extends Cubit<SplashState> {
     final prefs = await SharedPreferences.getInstance();
     final isFirstLaunch = prefs.getBool('isFirstLaunch') ?? true;
 
-    await Future.delayed(const Duration(seconds: 3));
+    final minDelay = Future.delayed(const Duration(seconds: 3));
+
+    // ini yang tadinya ilang — checkSession harus dipanggil dari sini
+    await authCubit.checkSession();
+    await minDelay;
 
     if (isFirstLaunch) {
       emit(SplashNavigateOnboarding());
-    } else {
-      emit(SplashNavigateHome());
+      return;
     }
+
+    final isLoggedIn = authCubit.state is AuthAuthenticated;
+    emit(isLoggedIn ? SplashNavigateHome() : SplashNavigateLogin());
   }
 }

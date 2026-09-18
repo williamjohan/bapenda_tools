@@ -48,6 +48,8 @@ dependencies:
   google_maps_flutter: ^2.5.3
   permission_handler: ^11.3.1
   image_cropper: ^11.0.0
+  flutter_secure_storage: ^10.3.1
+  google_fonts: ^8.2.1
   
   # Navigation
   go_router: ^14.3.0

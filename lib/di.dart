@@ -6,6 +6,13 @@ import 'package:cekreklamemobile/core/services/network_service.dart';
 import 'package:cekreklamemobile/core/services/permission_service.dart';
 import 'package:cekreklamemobile/core/services/update_service.dart';
 import 'package:cekreklamemobile/core/services/update_version_service.dart';
+import 'package:cekreklamemobile/core/network/auth_interceptor.dart';
+import 'package:cekreklamemobile/data/datasources/auth/auth_local_datasource.dart';
+import 'package:cekreklamemobile/data/datasources/auth/auth_remote_datasource.dart';
+import 'package:cekreklamemobile/data/repositories/auth/auth_repository_impl.dart';
+import 'package:cekreklamemobile/domain/repositories/auth/auth_repository.dart'; 
+import 'package:cekreklamemobile/domain/usecases/auth/auth_usecase.dart';
+import 'package:cekreklamemobile/presentation/features/auth/cubit/auth_cubit.dart'; 
 import 'package:cekreklamemobile/domain/usecases/post_report_usecase.dart';
 import 'package:cekreklamemobile/presentation/features/home/cubit/home_cubit.dart';
 import 'package:cekreklamemobile/presentation/features/home/cubit/nearby_cubit.dart';
@@ -25,6 +32,11 @@ import 'domain/usecases/check_billboard_usecase.dart';
 final GetIt locator = GetIt.instance;
 
 void setupLocator() {
+  // =========================
+  // AUTH
+  // =========================
+  locator.registerLazySingleton<AuthLocalDataSource>(() => AuthLocalDataSource());
+
   /// =========================
   //  External Libraries
   // =========================
@@ -32,22 +44,15 @@ void setupLocator() {
     final dio = Dio(
       BaseOptions(
         baseUrl: dotenv.env['BASE_URL'] ?? '',
-        // STRATEGI 1: Perpanjang durasi timeout (30-45 detik)
-        // Memberi nafas lebih untuk jabat tangan SSL di hardware lama
         connectTimeout: const Duration(seconds: 30),
         receiveTimeout: const Duration(seconds: 30),
-        sendTimeout: const Duration(
-          seconds: 45,
-        ), // Lebih lama untuk upload gambar
+        sendTimeout: const Duration(seconds: 45),
       ),
     );
 
     (dio.httpClientAdapter as IOHttpClientAdapter).createHttpClient = () {
       final client = HttpClient();
-
-      // STRATEGI 2: Prioritaskan IPv4 (Menghindari kemacetan IPv6 di perangkat Redmi)
       client.connectionTimeout = const Duration(seconds: 30);
-
       client.badCertificateCallback =
           (X509Certificate cert, String host, int port) {
             final baseUrl = dotenv.env['BASE_URL'] ?? '';
@@ -58,13 +63,13 @@ void setupLocator() {
       return client;
     };
 
-    // STRATEGI 3: Smart Retry
-    // Jika koneksi macet/timeout, coba lagi secara otomatis
+    dio.interceptors.add(AuthInterceptor(locator<AuthLocalDataSource>()));
+
     dio.interceptors.add(
       RetryInterceptor(
         dio: dio,
         logPrint: (obj) => locator<LoggerService>().d(obj),
-        retries: 3, // Coba ulang 3 kali
+        retries: 3,
         retryDelays: const [
           Duration(seconds: 2),
           Duration(seconds: 5),
@@ -98,12 +103,21 @@ void setupLocator() {
   locator.registerLazySingleton<BillboardRemoteDataSource>(
     () => BillboardRemoteDataSource(locator<Dio>()),
   );
+  locator.registerLazySingleton<AuthRemoteDataSource>( 
+    () => AuthRemoteDataSource(locator<Dio>()),
+  );
 
   // =========================
   // 2. Repository Layer
   // =========================
   locator.registerLazySingleton<BillboardRepository>(
     () => BillboardRepositoryImpl(locator<BillboardRemoteDataSource>()),
+  );
+  locator.registerLazySingleton<AuthRepository>( 
+    () => AuthRepositoryImpl(
+      locator<AuthRemoteDataSource>(),
+      locator<AuthLocalDataSource>(),
+    ),
   );
 
   // =========================
@@ -112,9 +126,11 @@ void setupLocator() {
   locator.registerLazySingleton<CheckBillboardUseCase>(
     () => CheckBillboardUseCase(locator()),
   );
-
   locator.registerLazySingleton<PostReportUsecase>(
     () => PostReportUsecase(locator<BillboardRepository>()),
+  );
+  locator.registerLazySingleton<AuthUseCase>( 
+    () => AuthUseCase(locator<AuthRepository>()),
   );
 
   // =========================
@@ -127,7 +143,6 @@ void setupLocator() {
   locator.registerLazySingleton<MapService>(
     () => MapService(locator<LoggerService>()),
   );
-
   locator.registerLazySingleton<UpdateVersionService>(
     () => UpdateVersionService(locator<LoggerService>()),
   );
@@ -148,16 +163,12 @@ void setupLocator() {
   // =========================
   // 5. PRESENTATION LAYER
   // =========================
-
-  // Result Features ( ResultCubit )
   locator.registerFactory<CheckResultCubit>(
     () => CheckResultCubit(
       locator<CheckBillboardUseCase>(),
       locator<PostReportUsecase>(),
     ),
   );
-
-  // Home Feature (HomeCubit )
   locator.registerFactory<HomeCubit>(
     () => HomeCubit(
       updateService: locator<UpdateService>(),
@@ -166,12 +177,17 @@ void setupLocator() {
       logger: locator<LoggerService>(),
     ),
   );
-
-  // Home Feature (NearbyCubit)
   locator.registerFactory<NearbyCubit>(
     () => NearbyCubit(
       mapService: locator<MapService>(),
       networkService: locator<NetworkService>(),
+    ),
+  );
+
+  locator.registerLazySingleton<AuthCubit>(
+    () => AuthCubit(
+      authUseCase: locator<AuthUseCase>(),
+      logger: locator<LoggerService>(),
     ),
   );
 }
