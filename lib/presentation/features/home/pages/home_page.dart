@@ -48,6 +48,7 @@ class HomePage extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      const SizedBox(height:8),
                       HomeBapendaCoreFeatureGrid(
                         items: _buildFeatureItems(context),
                       ),
