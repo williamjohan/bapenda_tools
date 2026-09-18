@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../../core/constants/app_colors_new.dart';
+import 'package:flutter/services.dart';
+import '../../../../core/constants/app_colors_new.dart'; // Sesuaikan path jika berbeda
 import 'home_feature_menu_item.dart';
 
 class HomeBapendaCoreFeatureGrid extends StatelessWidget {
@@ -10,29 +11,55 @@ class HomeBapendaCoreFeatureGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Transform.translate(
-      offset: const Offset(0, -16),
+      offset: const Offset(0, -10),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Container(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.fromLTRB(14, 16, 14, 16),
           decoration: BoxDecoration(
             color: AppThemeColors.defaultSurface,
-            borderRadius: BorderRadius.circular(12),
+            image: DecorationImage(
+                image: AssetImage('assets/images/pattern_type.png'),
+                alignment: Alignment.topCenter,
+                fit: BoxFit.fitWidth,
+              ),
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(color: AppThemeColors.subtleBorder),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 14,
+                offset: const Offset(0, 6),
+              ),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 1,
+                offset: const Offset(0, 1),
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Menu layanan',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: AppThemeColors.secondaryText,
-                ),
+              Row(
+                children: [
+                  Icon(Icons.apps_rounded, size: 16, color: AppThemeColors.gold),
+                  const SizedBox(width: 8),
+                  Text(
+                    'MENU LAYANAN',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                      height: 1,
+                      color: AppThemeColors.secondaryText,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 12),
               GridView.builder(
+                padding: EdgeInsets.zero,
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: items.length,
@@ -40,7 +67,8 @@ class HomeBapendaCoreFeatureGrid extends StatelessWidget {
                   crossAxisCount: 2,
                   mainAxisSpacing: 12,
                   crossAxisSpacing: 12,
-                  childAspectRatio: 1.15,
+                  // 🚀 FIX 1: Sedikit ditinggikan untuk mengakomodasi teks 2 baris
+                  childAspectRatio: 1.15, 
                 ),
                 itemBuilder: (context, index) => _FeatureCard(item: items[index]),
               ),
@@ -52,66 +80,157 @@ class HomeBapendaCoreFeatureGrid extends StatelessWidget {
   }
 }
 
-class _FeatureCard extends StatelessWidget {
+class _FeatureCard extends StatefulWidget {
   const _FeatureCard({required this.item});
 
   final HomeFeatureMenuItem item;
 
   @override
+  State<_FeatureCard> createState() => _FeatureCardState();
+}
+
+class _FeatureCardState extends State<_FeatureCard> {
+  bool _pressed = false;
+
+  void _setPressed(bool value) {
+    if (!widget.item.enabled) return;
+    setState(() => _pressed = value);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final item = widget.item;
     final disabled = !item.enabled;
 
-    return Opacity(
-      opacity: disabled ? 0.55 : 1,
-      child: Material(
-        color: AppThemeColors.defaultBackground,
-        borderRadius: BorderRadius.circular(12),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: disabled ? null : item.onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: disabled
-                        ? AppThemeColors.defaultBackground
-                        : AppThemeColors.primarySoft,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(
-                    item.icon,
-                    size: 19,
-                    color: disabled ? AppThemeColors.tertiaryText : AppThemeColors.gold,
-                  ),
-                ),
-                const Spacer(),
-                Text(
-                  item.title,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: disabled
-                        ? AppThemeColors.secondaryText
-                        : AppThemeColors.primaryText,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  item.subtitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: AppThemeColors.tertiaryText,
-                  ),
-                ),
-              ],
+    return GestureDetector(
+      onTapDown: (_) => _setPressed(true),
+      onTapCancel: () => _setPressed(false),
+      onTapUp: (_) => _setPressed(false),
+      onTap: disabled
+          ? null
+          : () {
+              HapticFeedback.lightImpact();
+              item.onTap?.call();
+            },
+      child: AnimatedScale(
+        scale: _pressed ? 0.96 : 1,
+        duration: const Duration(milliseconds: 100),
+        curve: Curves.easeOut,
+        child: Container(
+          decoration: BoxDecoration(
+            color: disabled ? AppThemeColors.defaultBackground : AppThemeColors.defaultSurface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: disabled ? AppThemeColors.defaultBorder : AppThemeColors.subtleBorder,
             ),
+            boxShadow: disabled
+                ? null
+                : [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.03),
+                      blurRadius: 1,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
+          ),
+          child: Stack(
+            children: [
+              Padding(
+                // 🚀 FIX 2: Kurangi padding atas/bawah dari 14 ke 12 agar area konten lebih luas
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(11),
+                        gradient: disabled
+                            ? null
+                            : LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  AppThemeColors.primarySoft,
+                                  AppThemeColors.primarySoft.withValues(alpha: 0.6),
+                                ],
+                              ),
+                        color: disabled ? AppThemeColors.defaultBackground : null,
+                      ),
+                      child: Icon(
+                        item.icon,
+                        size: 20,
+                        color: disabled ? AppThemeColors.tertiaryText : AppThemeColors.gold,
+                      ),
+                    ),
+                    
+                    const Spacer(), 
+                    
+                    Text(
+                      item.title,
+                      maxLines: 2, // 🚀 FIX 3: Batasi maksimal 2 baris
+                      overflow: TextOverflow.ellipsis, // 🚀 FIX 4: Potong dengan titik-titik jika lewat
+                      style: TextStyle(
+                        fontSize: 13.0, // Diturunkan sedikit dari 13.5
+                        fontWeight: FontWeight.w600,
+                        height: 1.15, // 🚀 FIX 5: Rapatkan spasi antar baris
+                        color: disabled ? AppThemeColors.secondaryText : AppThemeColors.primaryText,
+                      ),
+                    ),
+                    const SizedBox(height: 4), // Diperbesar dari 2 ke 4 agar subtitle tidak terlalu dempet
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            item.subtitle,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: AppThemeColors.tertiaryText,
+                            ),
+                          ),
+                        ),
+                        if (!disabled) ...[
+                          const SizedBox(width: 4),
+                          Icon(
+                            Icons.chevron_right_rounded,
+                            size: 14,
+                            color: AppThemeColors.gold,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              if (disabled)
+                Positioned(
+                  top: 10,
+                  right: 10,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppThemeColors.warningSoft,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      'Segera',
+                      style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w600,
+                        color: AppThemeColors.warning,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           ),
         ),
       ),
