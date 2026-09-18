@@ -4,9 +4,17 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   connectivity_plus
+<<<<<<< HEAD
   flutter_secure_storage_windows
+=======
+  file_selector_windows
+  firebase_core
+  flutter_secure_storage_windows
+  gal
+>>>>>>> 61e65f3dafe58611b3cb369a3f0c5067cbaea6e5
   geolocator_windows
   permission_handler_windows
+  printing
   share_plus
   url_launcher_windows
 )

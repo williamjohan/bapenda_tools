@@ -1,12 +1,12 @@
 import 'dart:typed_data';
-import 'package:cekreklamemobile/core/constants/app_constants.dart';
-import 'package:cekreklamemobile/core/utils/image_utils.dart';
-import 'package:cekreklamemobile/domain/value_objects/billboard_status.dart';
-import 'package:cekreklamemobile/domain/entities/billboard_entity.dart';
-import 'package:cekreklamemobile/presentation/features/result/cubit/check_result_cubit.dart';
-import 'package:cekreklamemobile/presentation/features/result/widgets/blink_status_indicator_widget.dart';
-import 'package:cekreklamemobile/presentation/shared/pages/image_preview_page.dart';
-import 'package:cekreklamemobile/presentation/shared/widgets/custom_modal_widget.dart';
+import 'package:bapendacore/core/constants/app_constants.dart';
+import 'package:bapendacore/core/utils/image_utils.dart';
+import 'package:bapendacore/domain/value_objects/billboard_status.dart';
+import 'package:bapendacore/domain/entities/billboard_entity.dart';
+import 'package:bapendacore/presentation/features/result/cubit/check_result_cubit.dart';
+import 'package:bapendacore/presentation/features/result/widgets/blink_status_indicator_widget.dart';
+import 'package:bapendacore/presentation/shared/pages/image_preview_page.dart';
+import 'package:bapendacore/presentation/shared/widgets/custom_modal_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 

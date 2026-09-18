@@ -1,9 +1,9 @@
 import 'dart:io';
-import 'package:cekreklamemobile/domain/entities/billboard_entity.dart';
-import 'package:cekreklamemobile/presentation/features/result/cubit/check_result_cubit.dart';
-import 'package:cekreklamemobile/core/constants/app_constants.dart'; // Import Constants
-import 'package:cekreklamemobile/presentation/features/result/pages/image_preview_page.dart';
-import 'package:cekreklamemobile/presentation/shared/widgets/custom_modal_widget.dart';
+import 'package:bapendacore/domain/entities/billboard_entity.dart';
+import 'package:bapendacore/presentation/features/result/cubit/check_result_cubit.dart';
+import 'package:bapendacore/core/constants/app_constants.dart'; // Import Constants
+import 'package:bapendacore/presentation/features/result/pages/image_preview_page.dart';
+import 'package:bapendacore/presentation/shared/widgets/custom_modal_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart'; // Import flutter_bloc
 import 'result_card_widget.dart';

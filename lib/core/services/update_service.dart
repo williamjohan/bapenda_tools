@@ -1,8 +1,9 @@
 import 'dart:convert';
-import 'package:cekreklamemobile/core/services/app_logger_service.dart';
-import 'package:cekreklamemobile/core/services/update_version_service.dart';
+import 'package:bapendacore/core/services/update_version_service.dart';
+import 'package:bapendacore/core/utils/app_logger.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:injectable/injectable.dart';
 
 // Model Data Update
 class UpdateInfo {
@@ -17,24 +18,23 @@ class UpdateInfo {
   });
 }
 
+@lazySingleton
 class UpdateService {
   final Dio _dio;
   final UpdateVersionService versionService;
-  final LoggerService _logger;
 
-  UpdateService(this._dio, this.versionService, this._logger);
+  UpdateService(this._dio, this.versionService);
 
   Future<UpdateInfo?> getAvailableUpdate() async {
     try {
-      // final jsonTestingUrl = dotenv.env['UPDATE_JSON_TESTING_URL'] ?? '';
       final jsonUrl = dotenv.env['UPDATE_JSON_URL'] ?? '';
 
-      _logger.i("Checking update status");
-      _logger.d("Update JSON URL: $jsonUrl");
+      AppLogger.info("Checking update status");
+      AppLogger.debug("Update JSON URL: $jsonUrl");
 
       final response = await _dio.get(jsonUrl);
 
-      _logger.d("Raw response: ${response.data}");
+      AppLogger.debug("Raw response: ${response.data}");
 
       Map<String, dynamic> data;
       if (response.data is String) {
@@ -46,14 +46,14 @@ class UpdateService {
       final serverBuildNumber =
           int.tryParse(data['buildNumber'].toString()) ?? 0;
 
-      _logger.d("Server build number: $serverBuildNumber");
+      AppLogger.debug("Server build number: $serverBuildNumber");
 
       final hasUpdate = await versionService.isUpdateAvailable(
         serverBuildNumber,
       );
 
       if (hasUpdate) {
-        _logger.w("New version found: ${data['versionName']}");
+        AppLogger.warning("New version found: ${data['versionName']}");
 
         return UpdateInfo(
           version: data['versionName'] ?? 'Unknown',
@@ -61,10 +61,10 @@ class UpdateService {
           downloadUrl: data['url'] ?? '',
         );
       } else {
-        _logger.i("App is up to date");
+        AppLogger.info("App is up to date");
       }
     } catch (e, s) {
-      _logger.e("Failed to get update info", e, s);
+      AppLogger.error("Failed to get update info", e, s);
     }
 
     return null;

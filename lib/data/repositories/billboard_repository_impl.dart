@@ -1,6 +1,6 @@
 // lib/data/repositories/mock_billboard_repository_impl.dart
 
-import 'package:cekreklamemobile/data/datasources/billboard_remote_datasource.dart';
+import 'package:bapendacore/data/datasources/billboard_remote_datasource.dart';
 
 import '../../domain/entities/billboard_entity.dart';
 import '../../domain/repositories/billboard_repository.dart';

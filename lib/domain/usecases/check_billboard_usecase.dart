@@ -1,6 +1,6 @@
 // lib/domain/usecases/check_billboard_usecase.dart
-import 'package:cekreklamemobile/domain/entities/billboard_entity.dart';
-import 'package:cekreklamemobile/domain/repositories/billboard_repository.dart';
+import 'package:bapendacore/domain/entities/billboard_entity.dart';
+import 'package:bapendacore/domain/repositories/billboard_repository.dart';
 
 class CheckBillboardUseCase {
   final BillboardRepository repository;

@@ -1,12 +1,13 @@
 import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'app_logger_service.dart';
+import 'package:injectable/injectable.dart';
+import 'package:bapendacore/core/utils/app_logger.dart'; 
 
+@lazySingleton
 class NetworkService {
   final Connectivity _connectivity = Connectivity();
-  final LoggerService logger;
 
-  NetworkService(this.logger);
+  NetworkService(); // Constructor bersih tanpa logger
 
   /// Cek koneksi sekali jalan (untuk init)
   Future<bool> isConnected() async {
@@ -19,7 +20,7 @@ class NetworkService {
       }
       return false;
     } catch (e) {
-      logger.e("Network check error", e, StackTrace.current);
+      AppLogger.error("Network check error", e, StackTrace.current);
       return false;
     }
   }

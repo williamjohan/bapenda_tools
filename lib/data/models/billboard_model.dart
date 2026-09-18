@@ -1,4 +1,4 @@
-import 'package:cekreklamemobile/core/utils/date_utils.dart';
+import 'package:bapendacore/core/utils/date_utils.dart';
 import '../../domain/entities/billboard_entity.dart';
 
 class BillboardModel {

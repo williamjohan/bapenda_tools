@@ -70,48 +70,48 @@ final GoRouter appRouter = GoRouter(
       name: AppRoutes.login,
       builder: (context, state) => const LoginPage(),
     ),
-    GoRoute(
-      path: AppRoutes.camera,
-      name: AppRoutes.camera,
-      pageBuilder: (context, state) {
-        return CustomTransitionPage(
-          key: state.pageKey,
-          child: BlocProvider(
-            create: (_) => CameraCubit()..start(),
-            child: const CameraPage(),
-          ),
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            const begin = 0.9;
-            const end = 1.0;
-            const curve = Curves.easeOutExpo;
-            final tween = Tween(
-              begin: begin,
-              end: end,
-            ).chain(CurveTween(curve: curve));
-            return FadeTransition(
-              opacity: animation,
-              child: ScaleTransition(
-                scale: animation.drive(tween),
-                child: child,
-              ),
-            );
-          },
-          transitionDuration: const Duration(milliseconds: 500),
-        );
-      },
-    ),
-    GoRoute(
-      path: AppRoutes.results,
-      name: AppRoutes.results,
-      builder: (context, state) {
-        final args = state.extra as Map<String, dynamic>?;
-        return CheckResultScreen(
-          imagePath: args?['imagePath'] ?? '',
-          latitude: args?['latitude'] ?? 0.0,
-          longitude: args?['longitude'] ?? 0.0,
-        );
-      },
-    ),
+    // GoRoute(
+    //   path: AppRoutes.camera,
+    //   name: AppRoutes.camera,
+    //   pageBuilder: (context, state) {
+    //     return CustomTransitionPage(
+    //       key: state.pageKey,
+    //       child: BlocProvider(
+    //         create: (_) => CameraCubit()..start(),
+    //         child: const CameraPage(),
+    //       ),
+    //       transitionsBuilder: (context, animation, secondaryAnimation, child) {
+    //         const begin = 0.9;
+    //         const end = 1.0;
+    //         const curve = Curves.easeOutExpo;
+    //         final tween = Tween(
+    //           begin: begin,
+    //           end: end,
+    //         ).chain(CurveTween(curve: curve));
+    //         return FadeTransition(
+    //           opacity: animation,
+    //           child: ScaleTransition(
+    //             scale: animation.drive(tween),
+    //             child: child,
+    //           ),
+    //         );
+    //       },
+    //       transitionDuration: const Duration(milliseconds: 500),
+    //     );
+    //   },
+    // ),
+    // GoRoute(
+    //   path: AppRoutes.results,
+    //   name: AppRoutes.results,
+    //   builder: (context, state) {
+    //     final args = state.extra as Map<String, dynamic>?;
+    //     return CheckResultScreen(
+    //       imagePath: args?['imagePath'] ?? '',
+    //       latitude: args?['latitude'] ?? 0.0,
+    //       longitude: args?['longitude'] ?? 0.0,
+    //     );
+    //   },
+    // ),
     GoRoute(
       path: AppRoutes.detail,
       name: AppRoutes.detail,
