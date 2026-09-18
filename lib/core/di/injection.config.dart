@@ -1,0 +1,89 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+// **************************************************************************
+// InjectableConfigGenerator
+// **************************************************************************
+
+// ignore_for_file: type=lint
+// coverage:ignore-file
+
+// ignore_for_file: no_leading_underscores_for_library_prefixes
+import 'package:connectivity_plus/connectivity_plus.dart' as _i895;
+import 'package:dio/dio.dart' as _i361;
+import 'package:flutter_secure_storage/flutter_secure_storage.dart' as _i558;
+import 'package:get_it/get_it.dart' as _i174;
+import 'package:injectable/injectable.dart' as _i526;
+import 'package:shared_preferences/shared_preferences.dart' as _i460;
+
+import '../../domain/usecases/check_billboard_usecase.dart' as _i647;
+import '../../domain/usecases/post_report_usecase.dart' as _i438;
+import '../../presentation/features/home/cubit/home_cubit.dart' as _i900;
+import '../../presentation/features/result/cubit/check_result_cubit.dart'
+    as _i64;
+import '../network/dio_auth_interceptor.dart' as _i817;
+import '../network/network_cubit.dart' as _i11;
+import '../services/app_integrity_service.dart' as _i30;
+import '../services/map_service.dart' as _i569;
+import '../services/network_service.dart' as _i463;
+import '../services/permission/i_permission_service.dart' as _i164;
+import '../services/permission/permission_service_impl.dart' as _i1018;
+import '../services/update_service.dart' as _i919;
+import '../services/update_version_service.dart' as _i438;
+import '../storage/app_preference.dart' as _i594;
+import '../storage/app_secure_storage.dart' as _i233;
+import 'register_module.dart' as _i291;
+
+extension GetItInjectableX on _i174.GetIt {
+// initializes the registration of main-scope dependencies inside of GetIt
+  Future<_i174.GetIt> init({
+    String? environment,
+    _i526.EnvironmentFilter? environmentFilter,
+  }) async {
+    final gh = _i526.GetItHelper(
+      this,
+      environment,
+      environmentFilter,
+    );
+    final registerModule = _$RegisterModule();
+    await gh.factoryAsync<_i460.SharedPreferences>(
+      () => registerModule.prefs,
+      preResolve: true,
+    );
+    gh.lazySingleton<_i558.FlutterSecureStorage>(
+        () => registerModule.secureStorage);
+    gh.lazySingleton<_i895.Connectivity>(() => registerModule.connectivity);
+    gh.lazySingleton<_i569.MapService>(() => _i569.MapService());
+    gh.lazySingleton<_i463.NetworkService>(() => _i463.NetworkService());
+    gh.lazySingleton<_i438.UpdateVersionService>(
+        () => _i438.UpdateVersionService());
+    gh.lazySingleton<_i164.IPermissionService>(
+        () => _i1018.PermissionServiceImpl());
+    gh.lazySingleton<_i594.AppPreferences>(
+        () => _i594.AppPreferences(gh<_i460.SharedPreferences>()));
+    gh.factory<_i64.CheckResultCubit>(() => _i64.CheckResultCubit(
+          gh<_i647.CheckBillboardUseCase>(),
+          gh<_i438.PostReportUsecase>(),
+        ));
+    gh.lazySingleton<_i30.AppIntegrityService>(
+        () => _i30.AppIntegrityServiceImpl());
+    gh.lazySingleton<_i233.AppSecureStorage>(
+        () => _i233.AppSecureStorage(gh<_i558.FlutterSecureStorage>()));
+    gh.lazySingleton<_i11.NetworkCubit>(
+        () => _i11.NetworkCubit(gh<_i895.Connectivity>()));
+    gh.lazySingleton<_i817.DioAuthInterceptor>(
+        () => _i817.DioAuthInterceptor(gh<_i233.AppSecureStorage>()));
+    gh.lazySingleton<_i361.Dio>(
+        () => registerModule.getDio(gh<_i817.DioAuthInterceptor>()));
+    gh.lazySingleton<_i919.UpdateService>(() => _i919.UpdateService(
+          gh<_i361.Dio>(),
+          gh<_i438.UpdateVersionService>(),
+        ));
+    gh.factory<_i900.HomeCubit>(() => _i900.HomeCubit(
+          updateService: gh<_i919.UpdateService>(),
+          permissionService: gh<_i164.IPermissionService>(),
+        ));
+    return this;
+  }
+}
+
+class _$RegisterModule extends _i291.RegisterModule {}

@@ -1,20 +1,18 @@
-// lib/core/services/map_service.dart
-import 'package:cekreklamemobile/core/services/app_logger_service.dart';
-import 'package:flutter/foundation.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart'; // Untuk kDebugMode
+import 'package:injectable/injectable.dart';
+import 'package:bapendacore/core/utils/app_logger.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
+@lazySingleton
 class MapService {
-  final LoggerService logger;
   final String? _googleApiKey;
-  MapService(this.logger) : _googleApiKey = dotenv.env['GOOGLE_MAPS_API_KEY'];
+  
+  // Constructor bersih, tidak butuh injeksi logger
+  MapService() : _googleApiKey = dotenv.env['GOOGLE_MAPS_API_KEY'];
 
   String generateStaticMapUrl({required double lat, required double long}) {
-    // Cek apakah key berhasil dimuat
     if (_googleApiKey == null || _googleApiKey.isEmpty) {
-      if (kDebugMode) {
-        print("WARNING: Google Maps API Key TIDAK DITEMUKAN di .env!");
-      }
-      logger.w('MapService: GOOGLE_MAPS_API_KEY missing');
+      // Langsung panggil method static-nya
+      AppLogger.warning('MapService: GOOGLE_MAPS_API_KEY missing'); 
       return 'https://via.placeholder.com/400x200?text=MAP+API+KEY+MISSING';
     }
 
@@ -32,7 +30,8 @@ class MapService {
         '&markers=$marker'
         '&key=$_googleApiKey';
 
-    logger.d('MapService: static map url generated');
+    // Langsung panggil method static-nya
+    AppLogger.debug('MapService: static map url generated'); 
     return url;
   }
 }

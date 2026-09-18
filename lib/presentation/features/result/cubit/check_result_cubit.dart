@@ -1,16 +1,17 @@
 // lib/presentation/features/result/bloc/check_result_cubit.dart
 import 'dart:io';
-
-import 'package:cekreklamemobile/core/errors/failures.dart';
-import 'package:cekreklamemobile/core/utils/image_utils.dart';
-import 'package:cekreklamemobile/domain/entities/billboard_entity.dart';
-import 'package:cekreklamemobile/domain/usecases/check_billboard_usecase.dart';
-import 'package:cekreklamemobile/domain/usecases/post_report_usecase.dart';
+import 'package:bapendacore/core/errors/failure_messages_temp.dart';
+import 'package:bapendacore/core/utils/image_utils.dart';
+import 'package:bapendacore/domain/entities/billboard_entity.dart';
+import 'package:bapendacore/domain/usecases/check_billboard_usecase.dart';
+import 'package:bapendacore/domain/usecases/post_report_usecase.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:dio/dio.dart';
+import 'package:injectable/injectable.dart';
 import 'check_result_state.dart';
 
+@injectable
 class CheckResultCubit extends Cubit<CheckResultState> {
   final CheckBillboardUseCase checkBillboard;
   final PostReportUsecase postReport;

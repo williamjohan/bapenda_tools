@@ -1,6 +1,6 @@
-import 'package:cekreklamemobile/presentation/features/splashscreen/cubit/splash_cubit.dart';
-import 'package:cekreklamemobile/presentation/features/splashscreen/cubit/splash_state.dart';
-import 'package:cekreklamemobile/routes/app_routes.dart';
+import 'package:bapendacore/presentation/features/splashscreen/cubit/splash_cubit.dart';
+import 'package:bapendacore/presentation/features/splashscreen/cubit/splash_state.dart';
+import 'package:bapendacore/routes/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

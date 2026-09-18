@@ -1,4 +1,4 @@
-import 'package:cekreklamemobile/presentation/shared/widgets/custom_modal_widget.dart';
+import 'package:bapendacore/presentation/shared/widgets/custom_modal_widget.dart';
 import 'package:flutter/material.dart';
 
 Future<void> showUpdateConnectionErrorModal(

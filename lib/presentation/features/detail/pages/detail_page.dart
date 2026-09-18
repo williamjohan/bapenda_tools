@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
-import 'package:cekreklamemobile/core/utils/image_utils.dart';
-import 'package:cekreklamemobile/domain/entities/billboard_entity.dart';
+import 'package:bapendacore/core/utils/image_utils.dart';
+import 'package:bapendacore/domain/entities/billboard_entity.dart';
 import 'package:flutter/material.dart';
 
 class BillboardDetailScreen extends StatelessWidget {
