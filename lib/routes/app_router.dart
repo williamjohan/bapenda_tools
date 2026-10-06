@@ -19,7 +19,7 @@ import '../presentation/features/absensi/cubit/absensi/absensi_cubit.dart';
 import '../presentation/features/absensi/pages/absensi_page.dart';
 import '../presentation/features/laporan_kehadiran/cubit/laporan_cubit.dart';
 import '../presentation/features/laporan_kehadiran/pages/laporan_kehadiran_page.dart';
-import '../presentation/shared/widgets/adaptive_theme_scope.dart';
+import '../core/theme/theme_kit.dart';
 import '../presentation/features/auth/cubit/auth_cubit.dart';
 import '../presentation/features/auth/cubit/auth_state.dart';
 import '../presentation/features/cek_reklame/screens/cek_reklame_dashboard_screen.dart';

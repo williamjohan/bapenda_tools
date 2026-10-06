@@ -107,7 +107,14 @@ class AbsensiRemoteDataSourceImpl implements AbsensiRemoteDataSource {
       response = await _dio.get<List<int>>(
         ApiEndpoints.absensiLaporanPdf,
         queryParameters: {'tahun': tahun, 'bulan': bulan},
-        options: Options(responseType: ResponseType.bytes),
+        options: Options(
+          // Ambil mentah sebagai bytes → disimpan ke .pdf oleh repository.
+          responseType: ResponseType.bytes,
+          headers: {'Accept': 'application/pdf, application/json'},
+          // Generate PDF itu berat: jangan diulang otomatis saat 500/timeout
+          // (default RetryInterceptor = 3x ulang), biar server tidak dipukul 4x.
+          extra: {'ro_disable_retry': true},
+        ),
         onReceiveProgress: onReceiveProgress,
       );
     } on DioException catch (e) {

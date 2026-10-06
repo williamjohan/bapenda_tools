@@ -55,7 +55,6 @@ import '../network/dio_auth_interceptor.dart' as _i817;
 import '../network/hmac_kantor_interceptor.dart' as _i370;
 import '../network/network_cubit.dart' as _i11;
 import '../services/app_integrity_service.dart' as _i30;
-import '../services/biometric_service.dart' as _i374;
 import '../services/device_identity_service.dart' as _i218;
 import '../services/geo_location_service.dart' as _i869;
 import '../services/map_service.dart' as _i569;
@@ -99,8 +98,6 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i594.AppPreferences(gh<_i460.SharedPreferences>()));
     gh.lazySingleton<_i869.GeoLocationService>(
         () => _i869.GeoLocationServiceImpl());
-    gh.lazySingleton<_i374.BiometricService>(
-        () => _i374.BiometricServiceImpl());
     gh.lazySingleton<_i30.AppIntegrityService>(
         () => _i30.AppIntegrityServiceImpl());
     gh.lazySingleton<_i233.AppSecureStorage>(
@@ -109,12 +106,14 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i218.DeviceIdentityServiceImpl(gh<_i233.AppSecureStorage>()));
     gh.lazySingleton<_i904.GeocodingRepository>(
         () => _i793.GeocodingRepositoryImpl());
-    gh.lazySingleton<_i947.ThemeModeCubit>(
-        () => _i947.ThemeModeCubit(gh<_i594.AppPreferences>()));
     gh.lazySingleton<_i11.NetworkCubit>(
         () => _i11.NetworkCubit(gh<_i895.Connectivity>()));
     gh.lazySingleton<_i370.HmacKantorInterceptor>(
         () => _i370.HmacKantorInterceptor(gh<_i30.AppIntegrityService>()));
+    gh.lazySingleton<_i947.ThemeModeCubit>(() => _i947.ThemeModeCubit(
+          gh<_i594.AppPreferences>(),
+          gh<_i233.AppSecureStorage>(),
+        ));
     gh.lazySingleton<_i817.DioAuthInterceptor>(
         () => _i817.DioAuthInterceptor(gh<_i233.AppSecureStorage>()));
     gh.lazySingleton<_i361.Dio>(() => registerModule.getDio(
@@ -155,11 +154,6 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i826.AuthUseCase(gh<_i660.AuthRepository>()));
     gh.lazySingleton<_i248.AbsensiUseCase>(
         () => _i248.AbsensiUseCase(gh<_i173.AbsensiRepository>()));
-    gh.factory<_i1039.AbsenCubit>(() => _i1039.AbsenCubit(
-          gh<_i248.AbsensiUseCase>(),
-          gh<_i869.GeoLocationService>(),
-          gh<_i374.BiometricService>(),
-        ));
     gh.lazySingleton<_i1023.HistoryUseCase>(
         () => _i1023.HistoryUseCase(gh<_i169.HistoryRepository>()));
     gh.factory<_i900.HomeCubit>(() => _i900.HomeCubit(
@@ -173,6 +167,10 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i233.LaporanCubit(gh<_i248.AbsensiUseCase>()));
     gh.lazySingleton<_i224.AuthCubit>(
         () => _i224.AuthCubit(authUseCase: gh<_i826.AuthUseCase>()));
+    gh.factory<_i1039.AbsenCubit>(() => _i1039.AbsenCubit(
+          gh<_i248.AbsensiUseCase>(),
+          gh<_i869.GeoLocationService>(),
+        ));
     gh.factory<_i475.HistoryCubit>(
         () => _i475.HistoryCubit(gh<_i1023.HistoryUseCase>()));
     return this;

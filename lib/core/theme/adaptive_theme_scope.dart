@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../core/constants/design_system/tokens/app_theme.dart';
-import '../../../core/theme/theme_mode_cubit.dart';
+import 'app_theme_utils.dart';
+import 'theme_mode_cubit.dart';
 
 /// Membungkus halaman yang sudah mendukung dark mode.
 ///
@@ -17,13 +17,12 @@ class AdaptiveThemeScope extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final mode = context.watch<ThemeModeCubit>().state;
-    final isDark = switch (mode) {
-      ThemeMode.dark => true,
-      ThemeMode.light => false,
-      ThemeMode.system =>
-        MediaQuery.platformBrightnessOf(context) == Brightness.dark,
-    };
-
-    return Theme(data: isDark ? AppTheme.appDark : AppTheme.app, child: child);
+    return Theme(
+      data: AppThemeUtils.themeFor(
+        mode,
+        MediaQuery.platformBrightnessOf(context),
+      ),
+      child: child,
+    );
   }
 }

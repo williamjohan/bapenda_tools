@@ -1,6 +1,5 @@
 package com.bapenda.cekreklame
 
-import io.flutter.embedding.android.FlutterFragmentActivity
+import io.flutter.embedding.android.FlutterActivity
 
-// local_auth (verifikasi biometrik absensi) membutuhkan FragmentActivity.
-class MainActivity : FlutterFragmentActivity()
+class MainActivity : FlutterActivity()

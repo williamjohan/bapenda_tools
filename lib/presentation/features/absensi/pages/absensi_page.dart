@@ -1,22 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
 import '../../../../core/constants/design_system/tokens/app_palette.dart';
 import '../../../../core/services/geo_location_service.dart';
 import '../../../../domain/entities/absensi/riwayat_absensi_entity.dart';
-import '../../../shared/widgets/bapenda_sliver_header.dart';
-import '../../../shared/widgets/processing_loading_widget.dart';
 import '../../../shared/widgets/section_label.dart';
-import '../constants/absensi_formatters.dart';
 import '../cubit/absen/absen_cubit.dart';
 import '../cubit/absen/absen_state.dart';
 import '../cubit/absensi/absensi_cubit.dart';
 import '../cubit/absensi/absensi_state.dart';
-import '../widgets/absen_fab.dart';
+import '../logic/rekap_harian_logic.dart';
+import '../widgets/absen_bottom_panel.dart';
+import '../widgets/absensi_hero.dart';
 import '../widgets/hasil_absen_sheet.dart';
-import '../widgets/riwayat_item_card.dart';
-import '../widgets/ringkasan_card.dart';
+import '../widgets/riwayat_day_group.dart';
 
 class AbsensiPage extends StatefulWidget {
   const AbsensiPage({super.key});
@@ -46,6 +46,10 @@ class _AbsensiPageState extends State<AbsensiPage> {
         _scrollController.position.maxScrollExtent - 200) {
       context.read<AbsensiCubit>().loadMore();
     }
+  }
+
+  void _onBack() {
+    if (context.canPop()) context.pop();
   }
 
   // ---------------------------------------------------------------------------
@@ -138,94 +142,121 @@ class _AbsensiPageState extends State<AbsensiPage> {
   Widget build(BuildContext context) {
     final palette = context.palette;
 
-    return BlocListener<AbsenCubit, AbsenState>(
-      listener: _onAbsenState,
-      child: BlocBuilder<AbsenCubit, AbsenState>(
-        builder: (context, absenState) {
-          final isBusy = absenState is AbsenInProgress;
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: BlocListener<AbsenCubit, AbsenState>(
+        listener: _onAbsenState,
+        child: Scaffold(
+          backgroundColor: palette.background,
+          bottomNavigationBar: _buildBottomPanel(),
+          body: BlocBuilder<AbsensiCubit, AbsensiState>(
+            builder: (context, state) {
+              final today = state.ringkasan?.tanggal ?? DateTime.now();
+              final rekap = RekapHarianLogic.hitung(state.riwayat, today);
 
-          return Stack(
-            children: [
-              Scaffold(
-                backgroundColor: palette.background,
-                floatingActionButtonLocation:
-                    FloatingActionButtonLocation.centerFloat,
-                floatingActionButton: AbsenFab(
-                  isBusy: isBusy,
-                  onPressed: context.read<AbsenCubit>().submit,
-                ),
-                body: BlocBuilder<AbsensiCubit, AbsensiState>(
-                  builder: (context, state) => RefreshIndicator(
-                    onRefresh: context.read<AbsensiCubit>().load,
-                    color: palette.accent,
-                    backgroundColor: palette.surface,
-                    edgeOffset: 110,
-                    child: CustomScrollView(
-                      controller: _scrollController,
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      slivers: [
-                        BapendaSliverHeader(
-                          title: 'Absensi',
-                          showBackButton: true,
-                          subtitle: Text(
-                            AbsensiFormatters.tanggal(DateTime.now()),
-                          ),
-                        ),
-                        SliverPadding(
-                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
-                          sliver: SliverToBoxAdapter(
-                            child: RingkasanCard(
-                              ringkasan: state.ringkasan,
-                              isLoading:
-                                  state.ringkasanStatus ==
-                                  AbsensiLoadStatus.loading,
-                              errorMessage: state.ringkasanError,
-                              onRetry: context
-                                  .read<AbsensiCubit>()
-                                  .loadRingkasan,
-                            ),
-                          ),
-                        ),
-                        const SliverPadding(
-                          padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
-                          sliver: SliverToBoxAdapter(
-                            child: SectionLabel(
-                              text: 'Riwayat Absensi',
-                              icon: Icons.history_rounded,
-                            ),
-                          ),
-                        ),
-                        ..._buildRiwayat(context, state),
-                        // Ruang untuk FAB.
-                        const SliverToBoxAdapter(child: SizedBox(height: 120)),
-                      ],
+              return RefreshIndicator(
+                onRefresh: context.read<AbsensiCubit>().load,
+                color: palette.accent,
+                backgroundColor: palette.surface,
+                child: CustomScrollView(
+                  controller: _scrollController,
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: _buildTop(context, state, rekap, today),
                     ),
-                  ),
-                ),
-              ),
-              if (isBusy)
-                Positioned.fill(
-                  child: ColoredBox(
-                    color: Colors.black54,
-                    child: Center(
-                      child: ProcessingLoadingWidget(
-                        message: _stepMessage(absenState.step),
+                    const SliverPadding(
+                      padding: EdgeInsets.fromLTRB(16, 24, 16, 12),
+                      sliver: SliverToBoxAdapter(
+                        child: SectionLabel(
+                          text: 'Riwayat Absensi',
+                          icon: Icons.history_rounded,
+                        ),
                       ),
                     ),
-                  ),
+                    ..._buildRiwayat(context, state, today),
+                    const SliverToBoxAdapter(child: SizedBox(height: 16)),
+                  ],
                 ),
-            ],
-          );
-        },
+              );
+            },
+          ),
+        ),
       ),
     );
   }
 
-  List<Widget> _buildRiwayat(BuildContext context, AbsensiState state) {
+  /// Hero gradient: sapaan, jam live, jadwal, ringkasan MASUK/PULANG.
+  Widget _buildTop(
+    BuildContext context,
+    AbsensiState state,
+    RekapHarian rekap,
+    DateTime today,
+  ) {
+    final ringkasan = state.ringkasan;
+
+    return Container(
+      padding: const EdgeInsets.only(bottom: 20),
+      decoration: BoxDecoration(
+        gradient: context.palette.headerLinearGradient,
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(32)),
+      ),
+      child: Column(
+        children: [
+          AbsensiHero(
+            nama: ringkasan?.nama,
+            tanggal: today,
+            masuk: rekap.masuk,
+            pulang: rekap.pulang,
+            menitTelat: rekap.menitTelat(ringkasan?.jamMasukJadwal),
+            menitPulangCepat: rekap.menitPulangCepat(
+              ringkasan?.jamPulangJadwal,
+            ),
+            jamMasukJadwal: ringkasan?.jamMasukJadwal,
+            jamPulangJadwal: ringkasan?.jamPulangJadwal,
+            isLoading:
+                state.ringkasanStatus == AbsensiLoadStatus.loading ||
+                state.riwayatStatus == AbsensiLoadStatus.loading,
+            onBack: _onBack,
+          ),
+          if (state.ringkasanError != null && ringkasan == null)
+            _HeroError(
+              message: state.ringkasanError!,
+              onRetry: context.read<AbsensiCubit>().loadRingkasan,
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// Panel tombol absen di bawah layar.
+  Widget _buildBottomPanel() {
+    return BlocBuilder<AbsensiCubit, AbsensiState>(
+      builder: (context, state) {
+        final today = state.ringkasan?.tanggal ?? DateTime.now();
+        final sudahMasuk =
+            RekapHarianLogic.hitung(state.riwayat, today).masuk != null;
+
+        return BlocBuilder<AbsenCubit, AbsenState>(
+          builder: (context, absenState) => AbsenBottomPanel(
+            busyStep: absenState is AbsenInProgress ? absenState.step : null,
+            sudahMasuk: sudahMasuk,
+            onAbsen: context.read<AbsenCubit>().submit,
+          ),
+        );
+      },
+    );
+  }
+
+  List<Widget> _buildRiwayat(
+    BuildContext context,
+    AbsensiState state,
+    DateTime today,
+  ) {
     switch (state.riwayatStatus) {
       case AbsensiLoadStatus.initial:
       case AbsensiLoadStatus.loading:
-        return [_riwayatList(_placeholderItems, loading: true)];
+        return [_groupList(_placeholderGroups(today), today, loading: true)];
       case AbsensiLoadStatus.failure:
         return [
           SliverToBoxAdapter(
@@ -249,7 +280,7 @@ class _AbsensiPageState extends State<AbsensiPage> {
           ];
         }
         return [
-          _riwayatList(state.riwayat),
+          _groupList(RekapHarianLogic.kelompokkanPerHari(state.riwayat), today),
           if (state.isLoadingMore)
             SliverToBoxAdapter(
               child: Padding(
@@ -266,8 +297,9 @@ class _AbsensiPageState extends State<AbsensiPage> {
     }
   }
 
-  Widget _riwayatList(
-    List<RiwayatAbsensiEntity> items, {
+  Widget _groupList(
+    List<RiwayatHarian> groups,
+    DateTime today, {
     bool loading = false,
   }) {
     return SliverPadding(
@@ -275,35 +307,63 @@ class _AbsensiPageState extends State<AbsensiPage> {
       sliver: Skeletonizer.sliver(
         enabled: loading,
         child: SliverList.separated(
-          itemCount: items.length,
-          separatorBuilder: (_, _) => const SizedBox(height: 10),
-          itemBuilder: (_, i) => RiwayatItemCard(item: items[i]),
+          itemCount: groups.length,
+          separatorBuilder: (_, _) => const SizedBox(height: 12),
+          itemBuilder: (_, i) =>
+              RiwayatDayGroup(group: groups[i], today: today),
         ),
       ),
     );
   }
 
-  String _stepMessage(AbsenStep step) {
-    switch (step) {
-      case AbsenStep.locating:
-        return 'Mengambil lokasi';
-      case AbsenStep.verifying:
-        return 'Verifikasi biometrik';
-      case AbsenStep.submitting:
-        return 'Mengirim absen';
-    }
-  }
+  static List<RiwayatHarian> _placeholderGroups(DateTime today) => [
+    for (var d = 0; d < 2; d++)
+      RiwayatHarian(
+        tanggal: DateTime(today.year, today.month, today.day - d),
+        items: [
+          for (final h in [16, 7])
+            RiwayatAbsensiEntity(
+              tglPresensi: DateTime(today.year, today.month, today.day - d, h),
+              jenisDevice: 1,
+              namaDevice: 'Ponsel placeholder',
+              sumber: SumberAbsensi.online,
+              isValid: true,
+            ),
+        ],
+      ),
+  ];
+}
 
-  static final List<RiwayatAbsensiEntity> _placeholderItems = List.generate(
-    6,
-    (_) => RiwayatAbsensiEntity(
-      tglPresensi: DateTime(2026, 1, 1, 7, 30),
-      jenisDevice: 1,
-      namaDevice: 'Ponsel placeholder',
-      sumber: SumberAbsensi.online,
-      isValid: true,
-    ),
-  );
+class _HeroError extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+  const _HeroError({required this.message, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 8, 12, 0),
+      child: Row(
+        children: [
+          const Icon(Icons.error_outline, color: Colors.white70, size: 16),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(color: Colors.white70, fontSize: 12),
+            ),
+          ),
+          TextButton(
+            onPressed: onRetry,
+            child: const Text(
+              'Coba lagi',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _RiwayatMessage extends StatelessWidget {
@@ -324,7 +384,7 @@ class _RiwayatMessage extends StatelessWidget {
     final palette = context.palette;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 40),
+      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 32),
       child: Column(
         children: [
           Icon(icon, color: palette.textTertiary, size: 40),

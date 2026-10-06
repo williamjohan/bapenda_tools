@@ -1,5 +1,4 @@
 import 'package:bapendacore/core/errors/failure.dart';
-import 'package:bapendacore/core/services/biometric_service.dart';
 import 'package:bapendacore/core/services/geo_location_service.dart';
 import 'package:bapendacore/domain/entities/absensi/absen_entity.dart';
 import 'package:bapendacore/domain/entities/absensi/riwayat_absensi_entity.dart';
@@ -64,17 +63,6 @@ class _FakeLocation implements GeoLocationService {
   Future<void> openLocationSettings() async {}
 }
 
-class _FakeBiometric implements BiometricService {
-  BiometricResult result = BiometricResult.success;
-  int calls = 0;
-
-  @override
-  Future<BiometricResult> authenticate(String reason) async {
-    calls++;
-    return result;
-  }
-}
-
 final _ringkasan = RingkasanAbsensiEntity(
   nip: '1',
   nama: 'A',
@@ -92,24 +80,21 @@ final _result = AbsenResultEntity(
 void main() {
   late _FakeRepository repository;
   late _FakeLocation location;
-  late _FakeBiometric biometric;
   late AbsenCubit cubit;
 
   setUp(() {
     repository = _FakeRepository();
     location = _FakeLocation();
-    biometric = _FakeBiometric();
-    cubit = AbsenCubit(AbsensiUseCase(repository), location, biometric);
+    cubit = AbsenCubit(AbsensiUseCase(repository), location);
   });
 
   tearDown(() => cubit.close());
 
-  test('alur sukses: lokasi → biometrik → kirim → sukses', () async {
+  test('alur sukses: lokasi → kirim → sukses (tanpa PIN/biometrik)', () async {
     final states = expectLater(
       cubit.stream,
       emitsInOrder([
         const AbsenInProgress(AbsenStep.locating),
-        const AbsenInProgress(AbsenStep.verifying),
         const AbsenInProgress(AbsenStep.submitting),
         AbsenSuccess(_result),
       ]),
@@ -118,10 +103,10 @@ void main() {
     await states;
 
     expect(repository.sent.single.isMockLocation, isFalse);
-    expect(repository.sent.single.metodeVerifikasi, 'BIOMETRIC_HP');
+    expect(repository.sent.single.metodeVerifikasi, 'HOLD_HP');
   });
 
-  test('fake GPS: lewati biometrik, tetap kirim isMockLocation=true', () async {
+  test('fake GPS tetap dikirim dengan isMockLocation=true', () async {
     location.position = const GeoPosition(
       latitude: 0,
       longitude: 0,
@@ -134,21 +119,11 @@ void main() {
 
     await cubit.submit();
 
-    expect(biometric.calls, 0);
     expect(repository.sent.single.isMockLocation, isTrue);
     expect(
       cubit.state,
       const AbsenFailure('Lokasi palsu terdeteksi. Matikan aplikasi fake GPS.'),
     );
-  });
-
-  test('biometrik dibatalkan: tidak mengirim ke API', () async {
-    biometric.result = BiometricResult.failed;
-
-    await cubit.submit();
-
-    expect(repository.sent, isEmpty);
-    expect(cubit.state, isA<AbsenFailure>());
   });
 
   test('GPS mati → AbsenLocationRequired', () async {
@@ -163,7 +138,7 @@ void main() {
     expect(repository.sent, isEmpty);
   });
 
-  test('tap ganda selama proses hanya mengirim satu request', () async {
+  test('submit ganda selama proses hanya mengirim satu request', () async {
     await Future.wait([cubit.submit(), cubit.submit()]);
 
     expect(repository.sent, hasLength(1));

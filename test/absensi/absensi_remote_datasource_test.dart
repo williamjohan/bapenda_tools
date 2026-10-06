@@ -46,7 +46,36 @@ Map<String, dynamic> _gagal(int status, String message) => {
   'data': null,
 };
 
+class _RecordingAdapter extends _FakeAdapter {
+  RequestOptions? last;
+  _RecordingAdapter()
+    : super(200, utf8.encode('%PDF'), {
+        Headers.contentTypeHeader: ['application/pdf'],
+      });
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) {
+    last = options;
+    return super.fetch(options, requestStream, cancelFuture);
+  }
+}
+
 void main() {
+  test('PDF diminta sebagai bytes, tanpa retry otomatis', () async {
+    final adapter = _RecordingAdapter();
+    await _dataSource(adapter).downloadLaporanPdf(tahun: 2026, bulan: 9);
+
+    final req = adapter.last!;
+    expect(req.responseType, ResponseType.bytes);
+    expect(req.extra['ro_disable_retry'], isTrue);
+    expect(req.queryParameters, {'tahun': 2026, 'bulan': 9});
+    expect(req.headers['Accept'], contains('application/pdf'));
+  });
+
   test(
     'HTTP 200 dengan isSuccess=false → ServerException berisi errors[0]',
     () async {

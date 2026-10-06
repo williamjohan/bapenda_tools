@@ -3,7 +3,7 @@ import 'package:equatable/equatable.dart';
 import '../../../../../core/services/geo_location_service.dart';
 import '../../../../../domain/entities/absensi/absen_entity.dart';
 
-enum AbsenStep { locating, verifying, submitting }
+enum AbsenStep { locating, submitting }
 
 sealed class AbsenState extends Equatable {
   const AbsenState();

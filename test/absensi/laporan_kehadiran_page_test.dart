@@ -1,5 +1,7 @@
 import 'package:bapendacore/core/errors/failure.dart';
 import 'package:bapendacore/core/storage/app_preference.dart';
+import 'package:bapendacore/core/storage/app_secure_storage.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:bapendacore/core/theme/theme_mode_cubit.dart';
 import 'package:bapendacore/domain/entities/absensi/absen_entity.dart';
 import 'package:bapendacore/domain/entities/absensi/riwayat_absensi_entity.dart';
@@ -9,7 +11,7 @@ import 'package:bapendacore/domain/usecases/absensi/absensi_usecase.dart';
 import 'package:bapendacore/presentation/features/laporan_kehadiran/cubit/laporan_cubit.dart';
 import 'package:bapendacore/presentation/features/laporan_kehadiran/pages/laporan_kehadiran_page.dart';
 import 'package:bapendacore/presentation/features/laporan_kehadiran/widgets/laporan_result_card.dart';
-import 'package:bapendacore/presentation/shared/widgets/adaptive_theme_scope.dart';
+import 'package:bapendacore/core/theme/adaptive_theme_scope.dart';
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -76,7 +78,12 @@ void main() {
         MaterialApp(
           home: MultiBlocProvider(
             providers: [
-              BlocProvider(create: (_) => ThemeModeCubit(prefs)),
+              BlocProvider(
+                create: (_) => ThemeModeCubit(
+                  prefs,
+                  AppSecureStorage(const FlutterSecureStorage()),
+                ),
+              ),
               BlocProvider(create: (_) => LaporanCubit(AbsensiUseCase(repo))),
             ],
             child: const AdaptiveThemeScope(child: LaporanKehadiranPage()),
@@ -123,7 +130,12 @@ void main() {
       MaterialApp(
         home: MultiBlocProvider(
           providers: [
-            BlocProvider(create: (_) => ThemeModeCubit(prefs)),
+            BlocProvider(
+              create: (_) => ThemeModeCubit(
+                prefs,
+                AppSecureStorage(const FlutterSecureStorage()),
+              ),
+            ),
             BlocProvider(create: (_) => LaporanCubit(AbsensiUseCase(repo))),
           ],
           child: const AdaptiveThemeScope(child: LaporanKehadiranPage()),

@@ -66,6 +66,10 @@ A single `Dio` instance carries several pieces of custom behavior:
 
 `AppRouter.router` uses `refreshListenable: GoRouterRefreshStream(getIt<AuthCubit>().stream)` together with a global `redirect`. Unauthenticated users are sent to `login` unless the route is in `_publicRoutes` (splash, onboarding, login), and authenticated users are redirected away from login and onboarding. New public routes must be added to `_publicRoutes`. Session data (token, NIP, cached user profile JSON, must-change-password flag) lives in `AppSecureStorage`.
 
+### Light/dark theme
+
+Everything is exported from `core/theme/theme_kit.dart`. Dark mode is **scoped**, not global: wrap a route's page in `AdaptiveThemeScope`, and use `context.palette` (`AppPalette`, a `ThemeExtension`) for colors in place of hardcoded `AppThemeColors`. Older pages still hardcode light colors and would break under a global dark theme. Read or change the mode with `context.isDarkMode` / `context.toggleThemeMode()` / `AppThemeUtils`. `ThemeModeCubit` stores the choice per user in `AppPreferences` (key `theme_mode_<nip>`, with a guest key before login). `main.dart` re-syncs it whenever `AuthCubit` changes state.
+
 ### In-progress modules
 
 - `va_qris` currently runs on mock data (`va_qris/mock/`) with `setState`. `va_qris/cubit_blueprint/va_qris_cubit_blueprint.dart` is a commented spec of the intended Freezed state, Cubit methods, and use cases. Follow it when wiring the real Cubit.

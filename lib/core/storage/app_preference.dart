@@ -64,12 +64,26 @@ class AppPreferences {
     await _prefs.setBool(_keyIsFirstTime, false);
   }
 
-  // THEME MODE ('system' | 'light' | 'dark'), default mengikuti sistem
-  String getThemeMode() => _prefs.getString(_keyThemeMode) ?? 'system';
+  // THEME MODE PER PROFIL PENGGUNA ('system' | 'light' | 'dark')
+  //
+  // Disimpan per NIP (`theme_mode_<nip>`) agar tiap pegawai punya tampilan
+  // sendiri di HP yang sama. [userKey] null = belum login (preferensi tamu).
+  // Tidak ikut dihapus clearUserData() → pulih saat user yang sama login lagi.
 
-  Future<void> setThemeMode(String value) async {
-    await _prefs.setString(_keyThemeMode, value);
+  String getThemeMode({String? userKey}) =>
+      _prefs.getString(_themeKeyFor(userKey)) ??
+      // User baru: warisi pilihan tamu (mis. diatur sebelum login).
+      _prefs.getString(_keyThemeMode) ??
+      'system';
+
+  Future<void> setThemeMode(String value, {String? userKey}) async {
+    await _prefs.setString(_themeKeyFor(userKey), value);
   }
+
+  static String _themeKeyFor(String? userKey) =>
+      (userKey == null || userKey.isEmpty)
+      ? _keyThemeMode
+      : '${_keyThemeMode}_$userKey';
 
   bool isDarkMode() => _prefs.getBool(_keyIsDarkMode) ?? false;
 
@@ -99,7 +113,6 @@ class AppPreferences {
   Future<void> clearAllSettings() async {
     await _prefs.clear();
   }
-
 
   /// Menyimpan status checkbox "Ingat Saya"
   Future<void> setRememberMe(bool value) async {

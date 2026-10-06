@@ -16,7 +16,8 @@ class AbsenParams extends Equatable {
     required this.longitude,
     required this.akurasiMeter,
     required this.isMockLocation,
-    this.metodeVerifikasi = 'BIOMETRIC_HP',
+    // Konfirmasi dengan menahan tombol di aplikasi (tanpa PIN/biometrik HP).
+    this.metodeVerifikasi = 'HOLD_HP',
   });
 
   @override

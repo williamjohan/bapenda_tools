@@ -9,6 +9,7 @@ import '../../../../core/utils/app_share_utils.dart';
 import '../../../shared/widgets/bapenda_sliver_header.dart';
 import '../../../shared/widgets/button.dart';
 import '../../../shared/widgets/section_label.dart';
+import '../../../shared/widgets/theme_toggle_button.dart';
 import '../cubit/laporan_cubit.dart';
 import '../cubit/laporan_state.dart';
 import '../widgets/laporan_result_card.dart';
@@ -84,6 +85,7 @@ class _LaporanKehadiranPageState extends State<LaporanKehadiranPage> {
                   title: 'Laporan Kehadiran',
                   showBackButton: true,
                   subtitle: Text('Rekap absensi bulanan (PDF)'),
+                  trailing: ThemeToggleButton(),
                 ),
                 SliverPadding(
                   padding: const EdgeInsets.all(16),

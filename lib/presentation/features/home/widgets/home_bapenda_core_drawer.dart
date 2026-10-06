@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/constants/design_system/tokens/app_palette.dart';
-import '../../../../core/theme/theme_mode_cubit.dart';
 import '../../profile/widgets/logout_bottom_widget.dart';
 
 class HomeBapendaCoreDrawer extends StatelessWidget {
@@ -101,8 +99,6 @@ class HomeBapendaCoreDrawer extends StatelessWidget {
 
             const Spacer(),
 
-            const _ThemeModeSelector(),
-
             Divider(height: 1, color: context.palette.border),
 
             ListTile(
@@ -118,70 +114,6 @@ class HomeBapendaCoreDrawer extends StatelessWidget {
             const SizedBox(height: 8),
           ],
         ),
-      ),
-    );
-  }
-}
-
-/// Pilihan tampilan: mengikuti sistem, terang, atau gelap.
-class _ThemeModeSelector extends StatelessWidget {
-  const _ThemeModeSelector();
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.palette;
-    final mode = context.watch<ThemeModeCubit>().state;
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'TAMPILAN',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.5,
-              color: palette.textTertiary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          SizedBox(
-            width: double.infinity,
-            child: SegmentedButton<ThemeMode>(
-              showSelectedIcon: false,
-              style: SegmentedButton.styleFrom(
-                foregroundColor: palette.textSecondary,
-                selectedForegroundColor: palette.accent,
-                selectedBackgroundColor: palette.accentSoft,
-                side: BorderSide(color: palette.borderStrong),
-                textStyle: const TextStyle(fontSize: 12),
-                visualDensity: VisualDensity.compact,
-              ),
-              segments: const [
-                ButtonSegment(
-                  value: ThemeMode.system,
-                  icon: Icon(Icons.brightness_auto_outlined, size: 18),
-                  label: Text('Sistem'),
-                ),
-                ButtonSegment(
-                  value: ThemeMode.light,
-                  icon: Icon(Icons.light_mode_outlined, size: 18),
-                  label: Text('Terang'),
-                ),
-                ButtonSegment(
-                  value: ThemeMode.dark,
-                  icon: Icon(Icons.dark_mode_outlined, size: 18),
-                  label: Text('Gelap'),
-                ),
-              ],
-              selected: {mode},
-              onSelectionChanged: (selection) =>
-                  context.read<ThemeModeCubit>().setMode(selection.first),
-            ),
-          ),
-        ],
       ),
     );
   }
