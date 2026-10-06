@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_colors_new.dart';
+import '../../../../core/constants/design_system/tokens/app_palette.dart';
 
 class HomeBapendaCoreHeader extends StatelessWidget {
   const HomeBapendaCoreHeader({
@@ -21,16 +22,9 @@ class HomeBapendaCoreHeader extends StatelessWidget {
       width: double.infinity,
       // Padding bawah (60) dilebarkan agar ada ruang sebelum tertimpa overlap Menu Card
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 60),
-      decoration: const BoxDecoration(
-        // Sesuaikan warna gradient ini dengan AppColors Anda jika sudah ada
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFE59C00), // Warna emas/oranye terang
-            Color(0xFFA65A00), // Warna oranye gelap/cokelat
-          ],
-        ),
+      // Gradient emas/oranye, versi lebih gelap saat dark mode
+      decoration: BoxDecoration(
+        gradient: context.palette.headerLinearGradient,
       ),
       child: SafeArea(
         bottom: false,

@@ -127,6 +127,13 @@ dependencies:
   firebase_core: ^4.14.0
   firebase_crashlytics: ^5.3.0
 
+  # ==========================================
+  # 🕘 ABSENSI (biometrik & identitas perangkat)
+  # ==========================================
+  local_auth: ^3.0.1
+  device_info_plus: ^12.4.0
+  uuid: ^4.6.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

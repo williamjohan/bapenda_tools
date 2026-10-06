@@ -5,17 +5,29 @@ import 'package:bapendacore/routes/app_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'core/di/injection.dart';
+import 'core/theme/theme_mode_cubit.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
-  configureDependencies();
+  await initializeDateFormatting('id_ID');
+  // Wajib di-await: SharedPreferences di-preResolve sebelum cubit lain terdaftar.
+  await configureDependencies();
   await FileCacheHelper.clearCache();
-  
+
   final authCubit = getIt<AuthCubit>()..checkSession();
 
-  runApp(BlocProvider<AuthCubit>.value(value: authCubit, child: const MyApp()));
+  runApp(
+    MultiBlocProvider(
+      providers: [
+        BlocProvider<AuthCubit>.value(value: authCubit),
+        BlocProvider<ThemeModeCubit>.value(value: getIt<ThemeModeCubit>()),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {

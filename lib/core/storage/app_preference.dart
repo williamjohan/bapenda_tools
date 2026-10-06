@@ -14,6 +14,7 @@ class AppPreferences {
 
   // Settings Keys
   static const String _keyIsDarkMode = 'is_dark_mode';
+  static const String _keyThemeMode = 'theme_mode';
   static const String _keyLanguage = 'language_code';
   static const String _keyNotification = 'is_notification_on';
   static const String _keyIsRememberMe = 'is_remember_me_checked';
@@ -63,7 +64,13 @@ class AppPreferences {
     await _prefs.setBool(_keyIsFirstTime, false);
   }
 
-  // THEME MODE
+  // THEME MODE ('system' | 'light' | 'dark'), default mengikuti sistem
+  String getThemeMode() => _prefs.getString(_keyThemeMode) ?? 'system';
+
+  Future<void> setThemeMode(String value) async {
+    await _prefs.setString(_keyThemeMode, value);
+  }
+
   bool isDarkMode() => _prefs.getBool(_keyIsDarkMode) ?? false;
 
   Future<void> setDarkMode(bool value) async {
