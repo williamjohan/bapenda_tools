@@ -18,6 +18,10 @@ class AppRoutes {
   static const String surveyReview = '/survey-review';
   static const String surveyInfo = '/survey-info';
 
+  /// Absensi pegawai
+  static const String absensi = '/absensi';
+  static const String laporanKehadiran = '/laporan-kehadiran';
+
   /// VA & QRIS
   static const String nop = '/va-qris';
   static const String billing = '/va-qris/tagihan';
