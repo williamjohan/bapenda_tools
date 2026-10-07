@@ -33,4 +33,10 @@ class AppRoutes {
   static const String balaiRw = '/balai-rw';
   static const String balaiRwAbsen = '/balai-rw-absen';
   static const String balaiRwLaporan = '/balai-rw-laporan';
+
+  // MY TASK
+  static const String myTask = '/my-task';
+  static const String myTaskDetail = '/my-task/detail';
+  static const String myTaskWork = '/my-task/kerjakan';
+  static const String myTaskSuccess = '/my-task/terkirim';
 }
